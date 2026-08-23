@@ -2,6 +2,8 @@
 
 An offline-first personal utility PWA built with React + TypeScript + Vite. Track your daily life — attendance, money, backlog, journal and links — with zero backend. All data lives privately in your device's browser storage.
 
+**Live:** [life-utlis.vercel.app](https://life-utlis.vercel.app)
+
 ## Features
 
 ### Today
@@ -59,21 +61,21 @@ npm run build    # type-checks and outputs static files to dist/
 npm run preview  # serve the production build locally
 ```
 
-## Deploy (free)
+## Deployment
 
-The build output in `dist/` is fully static — host it anywhere:
+The app is deployed on [Vercel](https://vercel.com) and live at **[life-utlis.vercel.app](https://life-utlis.vercel.app)**.
 
-**Cloudflare Pages**
+Vercel connects directly to this GitHub repo:
 
-1. Push this repo to GitHub
-2. On [pages.cloudflare.com](https://pages.cloudflare.com): Create project → Connect to Git
-3. Framework preset: Vite · Build command: `npm run build` · Output directory: `dist`
+- Every push to `main` triggers an automatic build (`npm run build`) and publishes `dist/` to their global CDN
+- Pull requests get their own preview URL to test before merging
+- No configuration was needed — Vercel auto-detects Vite (build command, output directory, SPA handling)
 
-Or drag-and-drop the `dist` folder via *Direct Upload*.
+To deploy your own copy: import the repo at [vercel.com/new](https://vercel.com/new), accept the detected settings, and deploy.
 
 **Install on your phone**
 
-Open the deployed HTTPS URL in Chrome → menu → *Add to Home screen* → Install. It runs fullscreen, offline, like a native app.
+Open [life-utlis.vercel.app](https://life-utlis.vercel.app) in Chrome → menu → *Add to Home screen* → Install. It runs fullscreen, offline, like a native app.
 
 ## Data & Privacy
 
@@ -84,7 +86,6 @@ Clearing browser/site data will erase the app's data — back up first.
 ## Project Structure
 
 ```
-app/
 ├── public/
 │   ├── icons/              # PWA icons
 │   ├── manifest.webmanifest
