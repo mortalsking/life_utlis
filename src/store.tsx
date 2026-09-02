@@ -34,6 +34,16 @@ const StoreContext = createContext<Store | null>(null);
 
 export function StoreProvider({ children }: { children: ReactNode }) {
   const [data, setData] = useState<AppData>(loadData);
+  const [theme, setTheme] = useState(() => {
+    const stored = localStorage.getItem("lifeutils-theme");
+    return stored === "light" ? "light" : "dark";
+  });
+
+  useEffect(() => {
+    localStorage.setItem("lifeutils-theme", theme);
+    document.documentElement.classList.toggle("light", theme === "light");
+    document.documentElement.classList.toggle("dark", theme === "dark");
+  }, [theme]);
 
   useEffect(() => {
     saveData(data);
@@ -48,26 +58,10 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       })),
     delTx: (id) => setData((d) => ({ ...d, txs: d.txs.filter((t) => t.id !== id) })),
     markAttendance: (date, subject, status) =>
-      setData((d) => {
-        const existing = d.attendance.find(
-          (a) => a.date === date && a.subject === subject,
-        );
-        if (existing && existing.status === status) {
-          return d;
-        }
-        if (existing) {
-          return {
-            ...d,
-            attendance: d.attendance.map((a) =>
-              a === existing ? { ...a, status } : a,
-            ),
-          };
-        }
-        return {
-          ...d,
-          attendance: [...d.attendance, { id: uid(), date, subject, status }],
-        };
-      }),
+      setData((d) => ({
+        ...d,
+        attendance: [...d.attendance, { id: uid(), date, subject, status }],
+      })),
     clearAttendance: (date, subject) =>
       setData((d) => ({
         ...d,
@@ -126,10 +120,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         if (!/^https?:\/\//i.test(u)) u = `https://${u}`;
         return {
           ...d,
-          links: [
-            { id: uid(), title: title.trim() || u, url: u, category },
-            ...d.links,
-          ],
+          links: [{ id: uid(), title: title.trim() || u, url: u, category }],
+          ...d.links,
         };
       }),
     delLink: (id) =>
