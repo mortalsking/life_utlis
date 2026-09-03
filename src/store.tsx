@@ -34,11 +34,10 @@ const StoreContext = createContext<Store | null>(null);
 
 export function StoreProvider({ children }: { children: ReactNode }) {
   const [data, setData] = useState<AppData>(loadData);
-const [theme, setTheme] = useState(() => {
+  const [theme] = useState(() => {
     const stored = localStorage.getItem("lifeutils-theme");
     return stored === "light" ? "light" : "dark";
-});
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
+  });
 
   useEffect(() => {
     localStorage.setItem("lifeutils-theme", theme);
