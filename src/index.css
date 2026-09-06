@@ -17,6 +17,22 @@
   --radius: 18px;
 }
 
+html.light {
+  --bg: #f8fafc;
+  --bg-soft: #f1f5f9;
+  --card: #ffffff;
+  --card-2: #fdfdfd;
+  --border: rgba(15, 23, 42, 0.08);
+  --border-strong: rgba(15, 23, 42, 0.15);
+  --text: #0f172a;
+  --muted: #64748b;
+  --accent: #0ea5e9;
+  --accent-2: #4f46e5;
+  --good: #10b981;
+  --bad: #ef4444;
+  --warn: #f59e0b;
+}
+
 * {
   box-sizing: border-box;
 }

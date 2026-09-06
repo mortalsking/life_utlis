@@ -29,13 +29,15 @@ export interface Store {
   addLink: (link: { title: string; url: string; category: string }) => void;
   delLink: (id: string) => void;
   replaceAll: (d: AppData) => void;
+  theme: "light" | "dark";
+  setTheme: (theme: "light" | "dark") => void;
 }
 
 const StoreContext = createContext<Store | null>(null);
 
 export function StoreProvider({ children }: { children: ReactNode }) {
   const [data, setData] = useState<AppData>(loadData);
-  const [theme] = useState(() => {
+  const [theme, setTheme] = useState<"light" | "dark">(() => {
     const stored = localStorage.getItem("lifeutils-theme");
     return stored === "light" ? "light" : "dark";
   });
@@ -52,6 +54,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
   const store: Store = {
     data,
+    theme,
+    setTheme,
     addTx: ({ date, kind, category, amount, note }) =>
       setData((d) => ({
         ...d,

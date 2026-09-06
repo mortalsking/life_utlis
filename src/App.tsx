@@ -1,5 +1,6 @@
 import { useState } from "react";
 import Icon, { type IconName } from "./components/Icon";
+import { useStore } from "./store";
 import Attendance from "./pages/Attendance";
 import Backlog from "./pages/Backlog";
 import Money from "./pages/Money";
@@ -21,6 +22,7 @@ const TABS: { id: Tab; icon: IconName; label: string }[] = [
 
 export default function App() {
   const [tab, setTab] = useState<Tab>("today");
+  const { theme, setTheme } = useStore();
 
   return (
     <div className="shell">
@@ -34,6 +36,13 @@ export default function App() {
             <span>{fmtDate(todayISO())}</span>
           </div>
         </div>
+        <button
+          className="icon-btn"
+          onClick={() => setTheme(theme === "light" ? "dark" : "light")}
+          title="Toggle Theme"
+        >
+          <Icon name={theme === "light" ? "moon" : "sun"} size={18} />
+        </button>
       </header>
 
       <main key={tab} className="page-host">
