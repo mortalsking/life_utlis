@@ -3,7 +3,7 @@
 
 > An offline-first personal utility PWA to track your daily life—attendance, finances, tasks, and journals—with zero backend. 
 
-**Live Demo:** [life-utlis.vercel.app](https://life-utlis.vercel.app)
+**Live Demo:** [[life-utlis.vercel.app](https://life-utlis.vercel.app)](https://app-sandy-alpha-82.vercel.app/)
 
 All data lives entirely and privately within your device's browser storage. No accounts, no servers, no tracking.
 
