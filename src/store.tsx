@@ -48,11 +48,33 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   });
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<User | null>(null);
+  const [isLoaded, setIsLoaded] = useState(false);
 
   useEffect(() => {
+    const fetchUserData = async (u: User) => {
+      const { data, error } = await supabase
+        .from("user_data")
+        .select("data")
+        .eq("id", u.id)
+        .single();
+      
+      if (data && data.data) {
+        setData(data.data as AppData);
+      } else if (error && error.code === 'PGRST116') {
+        // Not found, insert default
+        await supabase.from("user_data").insert([{ id: u.id, data: loadData() }]);
+      }
+      setIsLoaded(true);
+    };
+
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setUser(session?.user || null);
+      if (session?.user) {
+        fetchUserData(session.user);
+      } else {
+        setIsLoaded(true);
+      }
     });
 
     const {
@@ -60,6 +82,11 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
       setUser(session?.user || null);
+      if (session?.user) {
+        fetchUserData(session.user);
+      } else {
+        setIsLoaded(true);
+      }
     });
 
     return () => subscription.unsubscribe();
@@ -72,8 +99,13 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   }, [theme]);
 
   useEffect(() => {
+    // Save locally
     saveData(data);
-  }, [data]);
+    // Sync to supabase if logged in
+    if (user && isLoaded) {
+      supabase.from("user_data").upsert({ id: user.id, data }).then();
+    }
+  }, [data, user, isLoaded]);
 
   const store: Store = {
     data,
