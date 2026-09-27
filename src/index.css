@@ -1041,7 +1041,7 @@ details.journal-entry summary::-webkit-details-marker {
   width: calc(100% - 20px);
   max-width: 500px;
   display: grid;
-  grid-template-columns: repeat(6, 1fr);
+  grid-template-columns: repeat(7, 1fr);
   gap: 2px;
   background: color-mix(in srgb, var(--card) 82%, transparent);
   backdrop-filter: blur(18px);
@@ -1074,4 +1074,67 @@ details.journal-entry summary::-webkit-details-marker {
 .nav-btn.active {
   color: var(--accent);
   background: rgba(76, 194, 255, 0.12);
+}
+
+/* ---------- auth ---------- */
+
+.auth-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 20px;
+}
+
+.auth-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 30px;
+  width: 100%;
+  max-width: 400px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+}
+
+.auth-card h2 {
+  margin: 0 0 20px;
+  text-align: center;
+}
+
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.error-msg {
+  background: rgba(248, 113, 113, 0.1);
+  color: var(--bad);
+  padding: 10px;
+  border-radius: 8px;
+  margin-bottom: 15px;
+  font-size: 0.9rem;
+}
+
+.success-msg {
+  background: rgba(52, 211, 153, 0.1);
+  color: var(--good);
+  padding: 10px;
+  border-radius: 8px;
+  margin-bottom: 15px;
+  font-size: 0.9rem;
+}
+
+.link-btn {
+  background: none;
+  border: none;
+  color: var(--accent);
+  font-size: 0.85rem;
+  margin-top: 15px;
+  cursor: pointer;
+  width: 100%;
+  text-align: center;
+}
+.link-btn:hover {
+  text-decoration: underline;
 }

@@ -7,9 +7,11 @@ import Money from "./pages/Money";
 import Notes from "./pages/Notes";
 import Summary from "./pages/Summary";
 import Today from "./pages/Today";
+import Auth from "./pages/Auth";
+import FeedbackPage from "./pages/Feedback";
 import { fmtDate, todayISO } from "./utils";
 
-type Tab = "today" | "attend" | "money" | "tasks" | "notes" | "stats";
+type Tab = "today" | "attend" | "money" | "tasks" | "notes" | "stats" | "forum";
 
 const TABS: { id: Tab; icon: IconName; label: string }[] = [
   { id: "today", icon: "home", label: "Today" },
@@ -18,11 +20,16 @@ const TABS: { id: Tab; icon: IconName; label: string }[] = [
   { id: "tasks", icon: "tasks", label: "Tasks" },
   { id: "notes", icon: "pen", label: "Notes" },
   { id: "stats", icon: "chart", label: "Stats" },
+  { id: "forum", icon: "check", label: "Forum" }, // using check for now, can add a better icon if exists
 ];
 
 export default function App() {
   const [tab, setTab] = useState<Tab>("today");
-  const { theme, setTheme } = useStore();
+  const { theme, setTheme, session, signOut } = useStore();
+
+  if (!session) {
+    return <Auth />;
+  }
 
   return (
     <div className="shell">
@@ -36,13 +43,18 @@ export default function App() {
             <span>{fmtDate(todayISO())}</span>
           </div>
         </div>
-        <button
-          className="icon-btn"
-          onClick={() => setTheme(theme === "light" ? "dark" : "light")}
-          title="Toggle Theme"
-        >
-          <Icon name={theme === "light" ? "moon" : "sun"} size={18} />
-        </button>
+        <div style={{ display: "flex", gap: "0.5rem" }}>
+          <button
+            className="icon-btn"
+            onClick={() => setTheme(theme === "light" ? "dark" : "light")}
+            title="Toggle Theme"
+          >
+            <Icon name={theme === "light" ? "moon" : "sun"} size={18} />
+          </button>
+          <button className="icon-btn" onClick={signOut} title="Sign Out">
+            <Icon name="check" size={18} /> {/* Using check as a placeholder for signout icon */}
+          </button>
+        </div>
       </header>
 
       <main key={tab} className="page-host">
@@ -52,6 +64,7 @@ export default function App() {
         {tab === "tasks" && <Backlog />}
         {tab === "notes" && <Notes />}
         {tab === "stats" && <Summary />}
+        {tab === "forum" && <FeedbackPage />}
       </main>
 
       <nav className="bottom-nav">

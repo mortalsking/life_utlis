@@ -1,5 +1,7 @@
 /* eslint-disable react-refresh/only-export-components, react/only-export-components */
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
+import { type Session, type User } from "@supabase/supabase-js";
+import { supabase } from "./supabaseClient";
 import {
   defaultData,
   loadData,
@@ -31,6 +33,9 @@ export interface Store {
   replaceAll: (d: AppData) => void;
   theme: "light" | "dark";
   setTheme: (theme: "light" | "dark") => void;
+  session: Session | null;
+  user: User | null;
+  signOut: () => Promise<void>;
 }
 
 const StoreContext = createContext<Store | null>(null);
@@ -41,6 +46,24 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     const stored = localStorage.getItem("lifeutils-theme");
     return stored === "light" ? "light" : "dark";
   });
+  const [session, setSession] = useState<Session | null>(null);
+  const [user, setUser] = useState<User | null>(null);
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      setUser(session?.user || null);
+    });
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+      setUser(session?.user || null);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
 
   useEffect(() => {
     localStorage.setItem("lifeutils-theme", theme);
@@ -56,6 +79,11 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     data,
     theme,
     setTheme,
+    session,
+    user,
+    signOut: async () => {
+      await supabase.auth.signOut();
+    },
     addTx: ({ date, kind, category, amount, note }) =>
       setData((d) => ({
         ...d,
