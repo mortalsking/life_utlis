@@ -185,8 +185,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         if (!/^https?:\/\//i.test(u)) u = `https://${u}`;
         return {
           ...d,
-          links: [{ id: uid(), title: title.trim() || u, url: u, category }],
-          ...d.links,
+          links: [{ id: uid(), title: title.trim() || u, url: u, category }, ...d.links],
         };
       }),
     delLink: (id) =>
