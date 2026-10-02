@@ -62,7 +62,9 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         setData(data.data as AppData);
       } else if (error && error.code === 'PGRST116') {
         // Not found, insert default
-        await supabase.from("user_data").insert([{ id: u.id, data: loadData() }]);
+        const initData = defaultData();
+        await supabase.from("user_data").insert([{ id: u.id, data: initData }]);
+        setData(initData);
       }
       setIsLoaded(true);
     };
@@ -85,6 +87,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       if (session?.user) {
         fetchUserData(session.user);
       } else {
+        setData(defaultData());
         setIsLoaded(true);
       }
     });
@@ -114,6 +117,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     session,
     user,
     signOut: async () => {
+      setData(defaultData());
       await supabase.auth.signOut();
     },
     addTx: ({ date, kind, category, amount, note }) =>
@@ -123,10 +127,13 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       })),
     delTx: (id) => setData((d) => ({ ...d, txs: d.txs.filter((t) => t.id !== id) })),
     markAttendance: (date, subject, status) =>
-      setData((d) => ({
-        ...d,
-        attendance: [...d.attendance, { id: uid(), date, subject, status }],
-      })),
+      setData((d) => {
+        const filtered = d.attendance.filter((a) => !(a.date === date && a.subject === subject));
+        return {
+          ...d,
+          attendance: [...filtered, { id: uid(), date, subject, status }],
+        };
+      }),
     clearAttendance: (date, subject) =>
       setData((d) => ({
         ...d,

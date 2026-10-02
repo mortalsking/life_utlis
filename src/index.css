@@ -1,4 +1,7 @@
 @import "@fontsource-variable/outfit";
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
 :root {
   --bg: #0b1120;
@@ -1138,3 +1141,4 @@ details.journal-entry summary::-webkit-details-marker {
 .link-btn:hover {
   text-decoration: underline;
 }
+
