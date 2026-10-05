@@ -20,7 +20,7 @@ const TABS: { id: Tab; icon: IconName; label: string }[] = [
   { id: "tasks", icon: "tasks", label: "Tasks" },
   { id: "notes", icon: "pen", label: "Notes" },
   { id: "stats", icon: "chart", label: "Stats" },
-  { id: "forum", icon: "check", label: "Forum" }, // using check for now, can add a better icon if exists
+  { id: "forum", icon: "chat", label: "Forum" },
 ];
 
 export default function App() {
@@ -52,7 +52,7 @@ export default function App() {
             <Icon name={theme === "light" ? "moon" : "sun"} size={18} />
           </button>
           <button className="icon-btn" onClick={signOut} title="Sign Out">
-            <Icon name="check" size={18} /> {/* Using check as a placeholder for signout icon */}
+            <Icon name="logOut" size={18} />
           </button>
         </div>
       </header>

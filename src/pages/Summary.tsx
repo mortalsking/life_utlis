@@ -3,6 +3,7 @@ import Icon from "../components/Icon";
 import { useStore } from "../store";
 import { defaultData, type AppData } from "../types";
 import {
+  calcAttStats,
   fmtDate,
   fmtMoney,
   inRange,
@@ -19,11 +20,12 @@ export default function Summary() {
   const att = useMemo(() => {
     const month = monthRange();
     const mEntries = data.attendance.filter((a) => inRange(a.date, month));
-    const mPresent = mEntries.filter((a) => a.status === "present").length;
+    const mStats = calcAttStats(mEntries);
+    const totalStats = calcAttStats(data.attendance);
     return {
-      monthPercent: pct(mPresent, mEntries.length),
-      total: data.attendance.length,
-      present: data.attendance.filter((a) => a.status === "present").length,
+      monthPercent: mStats.percent,
+      total: totalStats.total,
+      present: totalStats.present,
     };
   }, [data.attendance]);
 

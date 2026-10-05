@@ -18,7 +18,7 @@ export interface Store {
   addTx: (tx: { date: string; kind: "expense" | "saved"; category: string; amount: number; note?: string }) => void;
   delTx: (id: string) => void;
   markAttendance: (date: string, subject: string, status: AttStatus) => void;
-  clearAttendance: (date: string, subject: string) => void;
+  clearAttendance: (date: string, subject?: string) => void;
   delAtt: (id: string) => void;
   addSubject: (name: string) => void;
   removeSubject: (name: string) => void;
@@ -51,6 +51,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const [isLoaded, setIsLoaded] = useState(false);
 
   useEffect(() => {
+    // Fetches user data from Supabase or inserts defaults if missing
     const fetchUserData = async (u: User) => {
       const { data, error } = await supabase
         .from("user_data")
@@ -69,19 +70,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       setIsLoaded(true);
     };
 
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user || null);
-      if (session?.user) {
-        fetchUserData(session.user);
-      } else {
-        setIsLoaded(true);
-      }
-    });
-
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
+    // Helper to process session changes and load data accordingly
+    const handleSession = (session: Session | null) => {
       setSession(session);
       setUser(session?.user || null);
       if (session?.user) {
@@ -90,6 +80,25 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         setData(defaultData());
         setIsLoaded(true);
       }
+    };
+
+    // Get initial session on mount
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (!session?.user) {
+        // If no user initially, we don't need to override local data with defaultData immediately 
+        // to allow offline/local mode usage if they haven't logged in yet, 
+        // but for consistency with onAuthStateChange we handle it similarly.
+        setIsLoaded(true);
+      } else {
+        handleSession(session);
+      }
+    });
+
+    // Listen to subsequent auth state changes
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      handleSession(session);
     });
 
     return () => subscription.unsubscribe();
@@ -127,18 +136,15 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       })),
     delTx: (id) => setData((d) => ({ ...d, txs: d.txs.filter((t) => t.id !== id) })),
     markAttendance: (date, subject, status) =>
-      setData((d) => {
-        const filtered = d.attendance.filter((a) => !(a.date === date && a.subject === subject));
-        return {
-          ...d,
-          attendance: [...filtered, { id: uid(), date, subject, status }],
-        };
-      }),
+      setData((d) => ({
+        ...d,
+        attendance: [...d.attendance, { id: uid(), date, subject, status }],
+      })),
     clearAttendance: (date, subject) =>
       setData((d) => ({
         ...d,
         attendance: d.attendance.filter(
-          (a) => !(a.date === date && a.subject === subject),
+          (a) => (subject ? !(a.date === date && a.subject === subject) : a.date !== date),
         ),
       })),
     delAtt: (id) =>

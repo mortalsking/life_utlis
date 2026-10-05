@@ -105,3 +105,60 @@ export function greeting(): string {
   if (h < 17) return "Good afternoon";
   return "Good evening";
 }
+
+export interface AttSummaryStats {
+  total: number;
+  present: number;
+  absent: number;
+  percent: number;
+}
+
+export function calcAttStats(entries: { status: string }[]): AttSummaryStats {
+  const total = entries.length;
+  const present = entries.filter((e) => e.status === "present").length;
+  const absent = total - present;
+  return { total, present, absent, percent: pct(present, total) };
+}
+
+export interface SubjectAttStats extends AttSummaryStats {
+  subject: string;
+}
+
+export function calcSubjectAttStats(entries: { subject: string; status: string }[]): SubjectAttStats[] {
+  const map = new Map<string, { present: number; total: number }>();
+  for (const a of entries) {
+    const cur = map.get(a.subject) ?? { present: 0, total: 0 };
+    cur.total += 1;
+    if (a.status === "present") cur.present += 1;
+    map.set(a.subject, cur);
+  }
+  return [...map.entries()]
+    .map(([subject, s]) => ({
+      subject,
+      total: s.total,
+      present: s.present,
+      absent: s.total - s.present,
+      percent: pct(s.present, s.total),
+    }))
+    .sort((a, b) => b.percent - a.percent);
+}
+
+export function calcStreak(entries: { date: string; status: string }[], today: string): number {
+  let day = today;
+  if (!entries.some((a) => a.date === day)) day = addDaysISO(day, -1);
+  let count = 0;
+  for (let i = 0; i < 90; i++) {
+    const dayEntries = entries.filter((a) => a.date === day);
+    if (dayEntries.length === 0) {
+      day = addDaysISO(day, -1);
+      continue;
+    }
+    if (dayEntries.every((a) => a.status === "present")) {
+      count += 1;
+      day = addDaysISO(day, -1);
+    } else {
+      break;
+    }
+  }
+  return count;
+}

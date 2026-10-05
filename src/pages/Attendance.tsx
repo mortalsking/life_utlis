@@ -1,7 +1,13 @@
 import { useMemo, useState } from "react";
 import Icon from "../components/Icon";
 import { useStore } from "../store";
-import { addDaysISO, fmtDate, pct, todayISO } from "../utils";
+import {
+  calcAttStats,
+  calcStreak,
+  calcSubjectAttStats,
+  fmtDate,
+  todayISO,
+} from "../utils";
 
 function monthMatrix(viewMonth: string): (string | null)[] {
   const [y, m] = viewMonth.split("-").map(Number);
@@ -27,62 +33,46 @@ function monthLabel(ym: string): string {
 }
 
 export default function Attendance() {
-  const { data, markAttendance, clearAttendance, addSubject, removeSubject } = useStore();
+  const { data, markAttendance, clearAttendance, delAtt, addSubject, removeSubject } = useStore();
   const today = todayISO();
   const [viewMonth, setViewMonth] = useState(() => today.slice(0, 7));
   const [selectedDate, setSelectedDate] = useState(today);
   const [newSubject, setNewSubject] = useState("");
+  const [attendanceSubject, setAttendanceSubject] = useState(() => data.subjects[0] ?? "");
+  const selectedAttendanceSubject = data.subjects.includes(attendanceSubject)
+    ? attendanceSubject
+    : data.subjects[0] ?? "";
 
-  const stats = useMemo(() => {
-    const total = data.attendance.length;
-    const present = data.attendance.filter((a) => a.status === "present").length;
-    return { total, present, absent: total - present, percent: pct(present, total) };
-  }, [data.attendance]);
+  const stats = useMemo(() => calcAttStats(data.attendance), [data.attendance]);
 
   const monthStats = useMemo(() => {
     const entries = data.attendance.filter((a) => a.date.startsWith(viewMonth));
-    const present = entries.filter((a) => a.status === "present").length;
-    return { percent: pct(present, entries.length), count: entries.length };
+    return calcAttStats(entries);
   }, [data.attendance, viewMonth]);
 
-  const streak = useMemo(() => {
-    let day = today;
-    if (!data.attendance.some((a) => a.date === day)) day = addDaysISO(day, -1);
-    let count = 0;
-    for (let i = 0; i < 90; i++) {
-      const entries = data.attendance.filter((a) => a.date === day);
-      if (entries.length === 0) {
-        day = addDaysISO(day, -1); // skip no-class days like Sundays
-        continue;
-      }
-      if (entries.every((a) => a.status === "present")) {
-        count += 1;
-        day = addDaysISO(day, -1);
-      } else break;
-    }
-    return count;
-  }, [data.attendance, today]);
+  const streak = useMemo(() => calcStreak(data.attendance, today), [data.attendance, today]);
 
-  const perSubject = useMemo(() => {
-    const map = new Map<string, { present: number; total: number }>();
-    for (const a of data.attendance) {
-      const cur = map.get(a.subject) ?? { present: 0, total: 0 };
-      cur.total += 1;
-      if (a.status === "present") cur.present += 1;
-      map.set(a.subject, cur);
-    }
-    return [...map.entries()]
-      .map(([subject, s]) => ({ subject, ...s, percent: pct(s.present, s.total) }))
-      .sort((a, b) => b.percent - a.percent);
-  }, [data.attendance]);
+  const perSubject = useMemo(
+    () => calcSubjectAttStats(data.attendance),
+    [data.attendance],
+  );
 
   const cells = useMemo(() => monthMatrix(viewMonth), [viewMonth]);
 
-  const selectedEntries = data.attendance.filter((a) => a.date === selectedDate);
+  const selectedEntries = useMemo(
+    () => data.attendance.filter((a) => a.date === selectedDate),
+    [data.attendance, selectedDate],
+  );
+
+  const selectedStats = useMemo(
+    () => calcAttStats(selectedEntries),
+    [selectedEntries],
+  );
 
   const history = useMemo(() => {
     const groups = new Map<string, typeof data.attendance>();
-    for (const a of [...data.attendance].sort((x, y) => y.date.localeCompare(x.date))) {
+    const sorted = [...data.attendance].sort((x, y) => y.date.localeCompare(x.date));
+    for (const a of sorted) {
       const list = groups.get(a.date) ?? [];
       list.push(a);
       groups.set(a.date, list);
@@ -100,22 +90,25 @@ export default function Attendance() {
 
   return (
     <div className="page">
-      <h2 className="page-title">Attendance</h2>
+      <h2 className="page-title">Attendance Tracker</h2>
 
       <div className="statgrid three">
         <div className="card stat">
           <span>This month</span>
           <strong>{monthStats.percent}%</strong>
+          <small className="muted small-text">{monthStats.present}/{monthStats.total} lectures</small>
         </div>
         <div className="card stat">
           <span>All time</span>
           <strong>{stats.percent}%</strong>
+          <small className="muted small-text">{stats.present}/{stats.total} lectures</small>
         </div>
         <div className="card stat flame-stat">
           <span>
             <Icon name="flame" size={13} /> Streak
           </span>
           <strong>{streak}d</strong>
+          <small className="muted small-text">active days</small>
         </div>
       </div>
 
@@ -158,55 +151,101 @@ export default function Attendance() {
         </div>
 
         <div className="cal-legend">
-          <span><i className="dot p" /> Present</span>
-          <span><i className="dot a" /> Absent</span>
+          <span><i className="dot p" /> All Present</span>
+          <span><i className="dot a" /> All Absent</span>
           <span><i className="dot m" /> Mixed</span>
         </div>
       </section>
 
+      {/* Selected Date Attendance Panel */}
       <section className="card">
-        <h3>{fmtDate(selectedDate)}</h3>
-        {data.subjects.length === 0 && (
-          <p className="empty">Add a subject below to start tracking.</p>
-        )}
-        <div className="att-row">
-          {data.subjects.map((s) => {
-            const st = selectedEntries.find((a) => a.subject === s)?.status;
-            return (
-              <div key={s} className="att-subject">
-                <span className="att-name">{s}</span>
-                <div className="tri-seg">
-                  <button
-                    className={st === "present" ? "on good" : ""}
-                    onClick={() => markAttendance(selectedDate, s, "present")}
-                  >
-                    P
-                  </button>
-                  <button
-                    className={st === "absent" ? "on bad" : ""}
-                    onClick={() => markAttendance(selectedDate, s, "absent")}
-                  >
-                    A
-                  </button>
-                  <button className={!st ? "on" : ""} onClick={() => clearAttendance(selectedDate, s)}>
-                    —
-                  </button>
-                </div>
-              </div>
-            );
-          })}
+        <div className="row-between" style={{ marginBottom: "0.5rem" }}>
+          <div>
+            <h3>{fmtDate(selectedDate)}</h3>
+            <p className="muted small-text">
+              {selectedEntries.length === 0
+                ? "No lectures logged for this day."
+                : `${selectedEntries.length} lecture${selectedEntries.length > 1 ? "s" : ""} logged (${selectedStats.present} Present, ${selectedStats.absent} Absent)`}
+            </p>
+          </div>
+          {selectedEntries.length > 0 && (
+            <button
+              className="btn ghost neg"
+              style={{ fontSize: "0.8rem", padding: "0.25rem 0.5rem" }}
+              onClick={() => clearAttendance(selectedDate)}
+              title="Clear all lectures for this date"
+            >
+              Clear day
+            </button>
+          )}
         </div>
+
+        {selectedEntries.length > 0 && (
+          <div className="att-row" style={{ marginBottom: "1rem" }}>
+            {selectedEntries.map((entry, idx) => (
+              <div key={entry.id} className="att-subject" style={{ gap: "0.5rem" }}>
+                <span className="att-name">
+                  #{idx + 1} {entry.subject}
+                </span>
+                <span className={`pill ${entry.status}`}>
+                  {entry.status === "present" ? "Present" : "Absent"}
+                </span>
+                <button
+                  className="icon-btn neg"
+                  aria-label={`Remove ${entry.subject} lecture #${idx + 1}`}
+                  title="Delete this lecture entry"
+                  onClick={() => delAtt(entry.id)}
+                >
+                  <Icon name="x" size={15} />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {data.subjects.length > 0 ? (
+          <div>
+            <p className="muted small-text" style={{ marginBottom: "0.4rem" }}>
+              Log a lecture for this date (multiple lectures allowed):
+            </p>
+            <div className="inline-form">
+              <select
+                value={selectedAttendanceSubject}
+                onChange={(e) => setAttendanceSubject(e.target.value)}
+              >
+                {data.subjects.map((subject) => (
+                  <option key={subject}>{subject}</option>
+                ))}
+              </select>
+              <button
+                className="btn primary"
+                onClick={() => markAttendance(selectedDate, selectedAttendanceSubject, "present")}
+              >
+                + Present
+              </button>
+              <button
+                className="btn neg"
+                onClick={() => markAttendance(selectedDate, selectedAttendanceSubject, "absent")}
+              >
+                + Absent
+              </button>
+            </div>
+          </div>
+        ) : (
+          <p className="empty">Add subjects below to start logging lectures.</p>
+        )}
       </section>
 
+      {/* Subject Statistics */}
       {perSubject.length > 0 && (
         <section className="card">
-          <h3>By subject</h3>
+          <h3>Subject Statistics</h3>
           {perSubject.map((s) => (
             <div key={s.subject} className="meter-row">
               <div className="meter-head">
                 <span>{s.subject}</span>
                 <span className="muted small-text">
-                  {s.present}/{s.total} · {s.percent}%
+                  {s.present}/{s.total} attended · {s.percent}%
                 </span>
               </div>
               <div className="meter">
@@ -220,9 +259,10 @@ export default function Attendance() {
         </section>
       )}
 
+      {/* Manage Subjects */}
       <section className="card">
-        <h3>Subjects</h3>
-        <div className="chips">
+        <h3>Manage Subjects</h3>
+        <div className="chips" style={{ marginBottom: "0.75rem" }}>
           {data.subjects.map((s) => (
             <button key={s} className="chip removable" onClick={() => removeSubject(s)}>
               {s} ×
@@ -244,28 +284,52 @@ export default function Attendance() {
             onChange={(e) => setNewSubject(e.target.value)}
           />
           <button className="btn" type="submit">
-            Add
+            Add Subject
           </button>
         </form>
       </section>
 
+      {/* Recent Days History Log */}
       <section className="card">
-        <h3>Recent days</h3>
-        {history.length === 0 && <p className="empty">No entries yet — tap a day above.</p>}
-        {history.map(([date, entries]) => (
-          <div key={date} className="history-day">
-            <button className="history-date linkish" onClick={() => setSelectedDate(date)}>
-              {fmtDate(date)}
-            </button>
-            <div className="history-entries">
-              {entries.map((a) => (
-                <span key={a.id} className={`pill ${a.status}`}>
-                  {a.subject}
+        <h3>Recent Days</h3>
+        {history.length === 0 && <p className="empty">No entries logged yet.</p>}
+        {history.map(([date, entries]) => {
+          const dayStats = calcAttStats(entries);
+          return (
+            <div key={date} className="history-day" style={{ marginBottom: "0.75rem" }}>
+              <div className="row-between" style={{ width: "100%", marginBottom: "0.25rem" }}>
+                <button className="history-date linkish" onClick={() => setSelectedDate(date)}>
+                  {fmtDate(date)} ({entries.length} lecture{entries.length > 1 ? "s" : ""})
+                </button>
+                <span className="muted small-text">
+                  {dayStats.present}/{dayStats.total} Present
                 </span>
-              ))}
+              </div>
+              <div className="history-entries" style={{ gap: "0.4rem", flexWrap: "wrap" }}>
+                {entries.map((a) => (
+                  <span
+                    key={a.id}
+                    className={`pill ${a.status}`}
+                    style={{ display: "inline-flex", alignItems: "center", gap: "0.25rem" }}
+                  >
+                    {a.subject}
+                    <button
+                      className="icon-btn"
+                      style={{ padding: 0, height: "auto", minWidth: "auto", border: "none", color: "inherit" }}
+                      title="Delete entry"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        delAtt(a.id);
+                      }}
+                    >
+                      <Icon name="x" size={12} />
+                    </button>
+                  </span>
+                ))}
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </section>
     </div>
   );
