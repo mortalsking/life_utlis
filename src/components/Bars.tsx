@@ -7,8 +7,8 @@ export default function Bars({ values, format }: BarsProps) {
   const max = Math.max(...values.map((v) => v.value), 1);
   return (
     <div className="bars">
-      {values.map((v) => (
-        <div key={v.label} className="bar-col">
+      {values.map((v, i) => (
+        <div key={`${v.label}-${i}`} className="bar-col">
           <span className="bar-val">{format ? format(v.value) : v.value || ""}</span>
           <div className="bar-track">
             <div

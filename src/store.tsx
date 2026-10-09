@@ -2,6 +2,7 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import { type Session, type User } from "@supabase/supabase-js";
 import { supabase } from "./supabaseClient";
+import { todayISO } from "./utils";
 import {
   defaultData,
   loadData,
@@ -161,7 +162,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       setData((d) => {
         const t = text.trim();
         if (!t) return d;
-        const task: Task = { id: uid(), text: t, created: new Date().toISOString().slice(0, 10), done: false };
+        const task: Task = { id: uid(), text: t, created: todayISO(), done: false };
         if (due) task.due = due;
         return { ...d, tasks: [task, ...d.tasks] };
       }),
@@ -172,7 +173,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
           t.id === id
             ? t.done
               ? { ...t, done: false, doneAt: undefined }
-              : { ...t, done: true, doneAt: new Date().toISOString().slice(0, 10) }
+              : { ...t, done: true, doneAt: todayISO() }
             : t,
         ),
       })),

@@ -1,6 +1,7 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { supabase } from "../supabaseClient";
 import Icon from "../components/Icon";
+import { useStore } from "../store";
 
 type Feedback = {
   id: number;
@@ -10,11 +11,14 @@ type Feedback = {
 };
 
 export default function FeedbackPage() {
+  const { user } = useStore();
   const [feedbacks, setFeedbacks] = useState<Feedback[]>([]);
   const [content, setContent] = useState("");
   const [loading, setLoading] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
-  const fetchFeedbacks = async () => {
+  const fetchFeedbacks = useCallback(async () => {
     const { data, error } = await supabase
       .from("feedback")
       .select("*")
@@ -22,29 +26,34 @@ export default function FeedbackPage() {
     if (!error && data) {
       setFeedbacks(data);
     }
-  };
+  }, []);
 
   useEffect(() => {
     fetchFeedbacks();
-  }, []);
+  }, [fetchFeedbacks]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!content.trim()) return;
 
     setLoading(true);
-    const { data: userData } = await supabase.auth.getUser();
-    const userEmail = userData.user?.email || "Anonymous";
+    setErrorMsg(null);
+    setSuccessMsg(null);
+
+    const userEmail = user?.email || "Anonymous";
 
     const { error } = await supabase.from("feedback").insert([
       {
-        content,
+        content: content.trim(),
         user_email: userEmail,
       },
     ]);
 
-    if (!error) {
+    if (error) {
+      setErrorMsg(error.message || "Could not submit feedback. Please try again.");
+    } else {
       setContent("");
+      setSuccessMsg("Feedback posted successfully!");
       fetchFeedbacks();
     }
     setLoading(false);
@@ -56,6 +65,16 @@ export default function FeedbackPage() {
       <p className="subtitle">Share your thoughts or issues with the app!</p>
       
       <form onSubmit={handleSubmit} className="card mt-1">
+        {errorMsg && (
+          <div className="p-3 text-sm text-red-600 bg-red-50 dark:bg-red-950/50 rounded-md border border-red-200 dark:border-red-900/50 font-medium mb-2">
+            {errorMsg}
+          </div>
+        )}
+        {successMsg && (
+          <div className="p-3 text-sm text-green-600 bg-green-50 dark:bg-green-950/50 rounded-md border border-green-200 dark:border-green-900/50 font-medium mb-2">
+            {successMsg}
+          </div>
+        )}
         <textarea
           className="input"
           value={content}

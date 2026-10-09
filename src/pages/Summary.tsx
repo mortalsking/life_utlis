@@ -9,6 +9,7 @@ import {
   inRange,
   monthRange,
   pct,
+  todayISO,
   weekRange,
   yearRange,
 } from "../utils";
@@ -41,7 +42,7 @@ export default function Summary() {
   );
 
   const openTasks = data.tasks.filter((t) => !t.done);
-  const overdue = openTasks.filter((t) => t.due && t.due < new Date().toISOString().slice(0, 10));
+  const overdue = openTasks.filter((t) => t.due && t.due < todayISO());
 
   const topCats = useMemo(() => {
     const r = monthRange();
@@ -63,7 +64,7 @@ export default function Summary() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `lifeutils-backup-${new Date().toISOString().slice(0, 10)}.json`;
+    a.download = `lifeutils-backup-${todayISO()}.json`;
     a.click();
     URL.revokeObjectURL(url);
   }
