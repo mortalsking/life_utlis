@@ -1,53 +1,87 @@
-
 # 📱 Life Utils
 
-> An offline-first personal utility PWA to track your daily life—attendance, finances, tasks, and journals—with zero backend. 
+> An offline-first, cloud-synced personal utility PWA to track your daily life—attendance, finances, tasks, journals, and community feedback—powered by React, Vite, and Supabase.
 
-**Live Demo:** (https://app-sandy-alpha-82.vercel.app/)
-
-All data lives entirely and privately within your device's browser storage. No accounts, no servers, no tracking.
+**Live Demo:** [https://app-sandy-alpha-82.vercel.app/](https://app-sandy-alpha-82.vercel.app/)
 
 ---
 
 ## ✨ Core Features
 
-### 📅 Today
-Your daily ritual, centralized on one screen. Mark attendance per subject, log daily expenses or savings, add quick backlog items, and write your daily journal entry without navigating away.
+### 🔐 User Authentication & Cloud Sync
+* **Secure Auth:** Email and password registration & sign-in powered by Supabase Auth.
+* **Hybrid Storage:** Works offline-first with `localStorage` and automatically syncs user data seamlessly to the cloud database when online.
+* **Multi-Device Support:** Access your personal dashboard and data from any device by signing into your account.
 
-### 🎓 Attendance
-*   **Smart Calendar:** Color-coded month views (present, absent, mixed) that are fully browsable.
-*   **Flexible Logging:** Mark or edit any date—including past dates—per subject.
-*   **Rich Metrics:** Track this-month and all-time percentages, plus an all-present streak counter that intelligently skips no-class days.
-*   **Subject Management:** Add, edit, and monitor individual per-subject percentage meters.
+### 📅 Today (Daily Dashboard)
+Your central daily hub. Mark attendance per subject, log daily expenses or savings, manage task backlogs, and record journal entries—all on one convenient screen.
 
-### 💰 Money
-*   **Historical Browsing:** Navigate seamlessly between Week, Month, and Year views.
-*   **Visual Insights:** View daily spending via a dynamic bar chart for your selected time period.
-*   **Category Breakdown:** Track spending across tags like Food, Transport, College, Study, Fun, Shopping, Health, Bills, and Other.
-*   **Savings Tracker:** Dedicated logging for money saved, complete with an all-time total and average daily spend metrics.
+### 🎓 Attendance Tracking
+* **Smart Calendar:** Color-coded monthly calendar views (present, absent, mixed days).
+* **Flexible Logging:** Record or adjust attendance for any date—including past dates—per subject.
+* **Rich Metrics:** Monthly and all-time attendance percentages, plus an intelligent streak counter that ignores no-class days.
+* **Subject Management:** Add, edit, and track individual per-subject progress meters.
 
-### ✅ Tasks (Backlog)
-*   **Task Management:** Add pending items with optional due dates.
-*   **Status Tracking:** Monitor overdue items with a dedicated counter.
-*   **Quick Cleanup:** View recently completed tasks and clear them instantly.
+### 💰 Money & Budgeting
+* **Historical Views:** Filter financial activity by Week, Month, or Year.
+* **Visual Analytics:** Dynamic bar charts showcasing daily spending habits.
+* **Category Breakdown:** Categorize expenses (Food, Transport, College, Study, Fun, Shopping, Health, Bills, Other).
+* **Savings Tracker:** Dedicated logging for savings with all-time totals and average daily spend stats.
 
-### 📓 Notes
-*   **Journal:** Log one entry per date with mood tracking. Fully editable for past entries.
-*   **Quick Links:** Save useful URLs under structured categories (Study, College, Tools, Fun) for one-tap access.
+### ✅ Tasks & Backlog
+* **Task Management:** Create pending tasks with optional due dates.
+* **Overdue Warnings:** Visual counters and alerts for overdue items.
+* **Quick Cleanup:** Easily filter and clear completed tasks.
+
+### 📓 Notes & Journal
+* **Daily Journal:** Record daily entries paired with mood tracking (editable for past dates).
+* **Link Vault:** Save and categorize useful bookmarks (Study, College, Tools, Fun) for quick access.
+
+### 💬 Forum & Feedback
+* **Community Board:** Share feedback, report bugs, or discuss feature ideas with other users.
+* **Live Feed:** Real-time feedback timeline sorted chronologically with author details and timestamps.
 
 ### 📊 Stats & Backup
-*   **At-a-Glance Dashboard:** Review attendance %, spending across all timeframes, top spending categories, and total savings.
-*   **Data Portability:** Generate complete JSON export backups of your data, and import them seamlessly to switch devices.
+* **At-a-Glance Summary:** Comprehensive metrics covering overall attendance %, lifetime spending, top expense categories, and total savings.
+* **Data Portability:** Export complete JSON backups of your data at any time, or import snapshots for manual data restores.
 
 ---
 
 ## 🛠️ Tech Stack
 
-*   **Core:** [React 19](https://react.dev) + [TypeScript](https://www.typescriptlang.org) + [Vite](https://vite.dev) (strict config)
-*   **Styling:** Zero UI libraries. 100% hand-rolled components and CSS for maximum performance and customization.
-*   **Typography:** [Outfit variable font](https://fontsource.org/fonts/outfit) bundled locally to ensure full offline capability.
-*   **Architecture (PWA):** Web manifest and a Service Worker utilizing a cache-first shell.
-*   **Persistence:** Versioned schema utilizing the browser's native `localStorage`.
+* **Frontend:** [React 19](https://react.dev) + [TypeScript](https://www.typescriptlang.org) + [Vite](https://vite.dev)
+* **Backend & Auth:** [Supabase](https://supabase.com) (`@supabase/supabase-js`) for User Auth, Database, and Realtime sync.
+* **Styling:** TailwindCSS, PostCSS, and custom CSS design system with Dark/Light theme toggle support.
+* **Typography:** [Outfit Variable Font](https://fontsource.org/fonts/outfit) bundled locally for offline capability.
+* **PWA & Offline Shell:** Web App Manifest (`manifest.webmanifest`) and Service Worker (`sw.js`).
+* **Linter:** [Oxlint](https://oxc.rs) for fast code quality checks.
+
+---
+
+## ⚙️ Environment Setup
+
+Create a `.env` file in the root of the app directory (or copy from `.env.example`):
+
+```env
+VITE_SUPABASE_URL=your_supabase_project_url
+VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
+```
+
+---
+
+## 🗄️ Database Schema (Supabase)
+
+If deploying your own Supabase backend, set up the following tables:
+
+1. **`user_data` Table:**
+   - `id` (uuid, primary key, references `auth.users`)
+   - `data` (jsonb, stores the user's complete app state)
+
+2. **`feedback` Table:**
+   - `id` (bigint / uuid, primary key, auto-generated)
+   - `created_at` (timestamp with time zone, default `now()`)
+   - `user_email` (text)
+   - `content` (text)
 
 ---
 
@@ -55,46 +89,40 @@ Your daily ritual, centralized on one screen. Mark attendance per subject, log d
 
 **Prerequisites:** [Node.js](https://nodejs.org) (v18 or higher)
 
-1. **Install dependencies and run locally:**
+1. **Install dependencies:**
    ```bash
    npm install
-   npm run dev      # Starts the dev server with hot reload
+   ```
 
-```
+2. **Run locally in development mode:**
+   ```bash
+   npm run dev
+   ```
 
-2. **Build for production:**
-```bash
-npm run build    # Type-checks and outputs static files to dist/
-npm run preview  # Serves the production build locally
+3. **Check code quality:**
+   ```bash
+   npm run lint
+   ```
 
-```
-
-
+4. **Build for production:**
+   ```bash
+   npm run build    # Type-checks and builds static assets to dist/
+   npm run preview  # Previews the production build locally
+   ```
 
 ---
 
 ## 🌍 Deployment & Installation
 
-The application is deployed globally on [Vercel](https://vercel.com) and updates automatically.
+### Web Deployment (Vercel)
+The project is optimized for deployment on [Vercel](https://vercel.com).
+* Continuous Integration automatically builds `main` pushes using `npm run build`.
+* Environment variables (`VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY`) should be added in the Vercel project settings.
 
-* **Continuous Integration:** Every push to `main` triggers an automatic build (`npm run build`) and publishes the `dist/` directory to Vercel's CDN.
-* **Deploy Your Own:** Import this repository at [vercel.com/new](https://vercel.com/new). Vercel auto-detects the Vite configuration—just accept the defaults and deploy.
-
-### 📱 Install as an App (PWA)
-
-1. Open [life-utlis.vercel.app](https://life-utlis.vercel.app) in Chrome or Safari on your phone.
-2. Open the browser menu and select **"Add to Home screen"**.
-3. It will install and run fullscreen and offline, exactly like a native application.
-
----
-
-## 🔒 Data & Privacy
-
-Because this is a zero-backend application, **there is no server and no account.**
-
-Everything you log stays locally in your browser's `localStorage` on that specific device.
-
-> **⚠️ Important:** Clearing your browser or site data will permanently erase your app data. Use **Stats → Export backup** regularly to download a JSON snapshot of your data, and use *Import backup* to restore it or migrate to a new phone/computer.
+### 📱 Mobile PWA Installation
+1. Open [app-sandy-alpha-82.vercel.app](https://app-sandy-alpha-82.vercel.app/) in Chrome or Safari on your phone.
+2. Tap the browser menu and select **"Add to Home Screen"**.
+3. Launch the app directly from your home screen with native full-screen experience and offline support.
 
 ---
 
@@ -102,21 +130,30 @@ Everything you log stays locally in your browser's `localStorage` on that specif
 
 ```text
 ├── public/
-│   ├── icons/              # PWA icons
-│   ├── manifest.webmanifest
-│   └── sw.js               # Service worker
+│   ├── icons/              # PWA app icons
+│   ├── manifest.webmanifest# Web app manifest configuration
+│   └── sw.js               # Service Worker for offline caching
 ├── src/
-│   ├── components/         # Shared UI (icons, charts, transaction form)
-│   ├── pages/              # Today, Attendance, Money, Backlog, Notes, Summary
-│   ├── store.tsx           # Context store + localStorage persistence logic
-│   ├── types.ts            # TypeScript data models
-│   ├── utils.ts            # Date and currency formatting helpers
-│   ├── App.tsx             # App shell + bottom navigation routing
-│   └── main.tsx            # Entry point + SW registration
-└── index.html
-
-```
-
-```
-
+│   ├── components/         # Reusable UI components (Icon, Bars, TxForm)
+│   ├── pages/              # App views:
+│   │   ├── Attendance.tsx  # Attendance calendar & subject management
+│   │   ├── Auth.tsx        # Sign In & Sign Up authentication form
+│   │   ├── Backlog.tsx     # Task & todo manager
+│   │   ├── Feedback.tsx    # Forum & community feedback feed
+│   │   ├── Money.tsx       # Expense & savings tracker
+│   │   ├── Notes.tsx       # Journal & bookmark vault
+│   │   ├── Summary.tsx     # Overall stats dashboard & JSON data export/import
+│   │   └── Today.tsx       # Daily ritual overview dashboard
+│   ├── store.tsx           # React Context store + local & Supabase sync
+│   ├── supabaseClient.ts   # Supabase SDK initialization
+│   ├── types.ts            # TypeScript interfaces & default state defaults
+│   ├── utils.ts            # Date formatting and calculation helpers
+│   ├── App.tsx             # Main layout, tab navigation, and header
+│   ├── index.css           # Global theme styling, CSS variables & utilities
+│   └── main.tsx            # App mounting & Service Worker registration
+├── .env.example            # Sample environment variables config
+├── index.html              # Entry HTML file
+├── tailwind.config.js      # Tailwind CSS configuration
+├── vite.config.ts          # Vite build tool configuration
+└── package.json            # Project dependencies and script runner
 ```

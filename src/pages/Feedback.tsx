@@ -14,10 +14,6 @@ export default function FeedbackPage() {
   const [content, setContent] = useState("");
   const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    fetchFeedbacks();
-  }, []);
-
   const fetchFeedbacks = async () => {
     const { data, error } = await supabase
       .from("feedback")
@@ -27,6 +23,10 @@ export default function FeedbackPage() {
       setFeedbacks(data);
     }
   };
+
+  useEffect(() => {
+    fetchFeedbacks();
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
