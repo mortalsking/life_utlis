@@ -36,6 +36,9 @@ export interface Store {
   setTheme: (theme: "light" | "dark") => void;
   session: Session | null;
   user: User | null;
+  isGuest: boolean;
+  showAuthModal: boolean;
+  setShowAuthModal: (show: boolean) => void;
   signOut: () => Promise<void>;
 }
 
@@ -50,21 +53,41 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [isLoaded, setIsLoaded] = useState(false);
+  const [showAuthModal, setShowAuthModal] = useState(false);
 
   useEffect(() => {
     // Fetches user data from Supabase or inserts defaults if missing
     const fetchUserData = async (u: User) => {
-      const { data, error } = await supabase
+      const { data: cloudRes, error } = await supabase
         .from("user_data")
         .select("data")
         .eq("id", u.id)
         .single();
       
-      if (data && data.data) {
-        setData(data.data as AppData);
-      } else if (error && error.code === 'PGRST116') {
-        // Not found, insert default
-        const initData = defaultData();
+      const local = loadData();
+      const hasLocalData =
+        local.txs.length > 0 ||
+        local.attendance.length > 0 ||
+        local.tasks.length > 0 ||
+        local.journal.length > 0;
+
+      if (cloudRes && cloudRes.data) {
+        const cloudData = cloudRes.data as AppData;
+        const cloudEmpty =
+          cloudData.txs.length === 0 &&
+          cloudData.attendance.length === 0 &&
+          cloudData.tasks.length === 0;
+
+        if (hasLocalData && cloudEmpty) {
+          // Seamlessly migrate guest data to cloud account
+          await supabase.from("user_data").upsert({ id: u.id, data: local });
+          setData(local);
+        } else {
+          setData(cloudData);
+        }
+      } else if (error && error.code === "PGRST116") {
+        // Brand new user: sync current guest data to cloud!
+        const initData = hasLocalData ? local : defaultData();
         await supabase.from("user_data").insert([{ id: u.id, data: initData }]);
         setData(initData);
       }
@@ -78,7 +101,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       if (session?.user) {
         fetchUserData(session.user);
       } else {
-        setData(defaultData());
+        // Guest mode: preserve local offline storage
+        setData(loadData());
         setIsLoaded(true);
       }
     };
@@ -86,9 +110,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     // Get initial session on mount
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (!session?.user) {
-        // If no user initially, we don't need to override local data with defaultData immediately 
-        // to allow offline/local mode usage if they haven't logged in yet, 
-        // but for consistency with onAuthStateChange we handle it similarly.
+        setData(loadData());
         setIsLoaded(true);
       } else {
         handleSession(session);
@@ -126,9 +148,14 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     setTheme,
     session,
     user,
+    isGuest: !session,
+    showAuthModal,
+    setShowAuthModal,
     signOut: async () => {
-      setData(defaultData());
       await supabase.auth.signOut();
+      setSession(null);
+      setUser(null);
+      setData(loadData());
     },
     addTx: ({ date, kind, category, amount, note }) =>
       setData((d) => ({

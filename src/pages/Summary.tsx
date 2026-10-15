@@ -15,7 +15,7 @@ import {
 } from "../utils";
 
 export default function Summary() {
-  const { data, replaceAll } = useStore();
+  const { data, replaceAll, session, user, setShowAuthModal } = useStore();
   const fileRef = useRef<HTMLInputElement>(null);
 
   const att = useMemo(() => {
@@ -172,13 +172,31 @@ export default function Summary() {
       )}
 
       <section className="card">
-        <h3>Data</h3>
+        <h3>Cloud Sync & Data</h3>
+        {!session ? (
+          <div style={{ marginBottom: "1rem", padding: "0.75rem", borderRadius: "12px", background: "rgba(251, 191, 36, 0.08)", border: "1px solid rgba(251, 191, 36, 0.2)" }}>
+            <p className="small-text" style={{ margin: "0 0 0.5rem 0", color: "var(--warn)" }}>
+              ⚡ <strong>Guest Mode Active:</strong> Data is saved on this browser only. Sign in to enable automatic cloud backup and access across all your devices.
+            </p>
+            <button className="btn primary full" onClick={() => setShowAuthModal(true)}>
+              <Icon name="check" size={16} /> Sign In to Enable Auto Cloud Sync
+            </button>
+          </div>
+        ) : (
+          <div style={{ marginBottom: "1rem", padding: "0.75rem", borderRadius: "12px", background: "rgba(52, 211, 153, 0.08)", border: "1px solid rgba(52, 211, 153, 0.2)" }}>
+            <p className="small-text" style={{ margin: 0, color: "var(--good)", display: "flex", alignItems: "center", gap: "0.4rem" }}>
+              <span style={{ width: "8px", height: "8px", borderRadius: "50%", background: "var(--good)" }} />
+              <strong>Cloud Sync Active:</strong> Synced with {user?.email}
+            </p>
+          </div>
+        )}
+
+        <h4>Manual Backup</h4>
         <p className="muted small">
-          Everything lives in this phone's browser. Back it up now and then — clearing browser
-          data wipes the app.
+          Export or import a JSON snapshot file of your entire app data anytime.
         </p>
-        <button className="btn primary full" onClick={exportJSON}>
-          <Icon name="download" size={17} /> Export backup
+        <button className="btn ghost full" onClick={exportJSON}>
+          <Icon name="download" size={17} /> Export backup (JSON)
         </button>
         <input
           ref={fileRef}

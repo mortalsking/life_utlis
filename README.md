@@ -8,19 +8,20 @@
 
 ## ✨ Core Features
 
-### 🔐 User Authentication & Cloud Sync
-* **Secure Auth:** Email and password registration & sign-in powered by Supabase Auth.
-* **Hybrid Storage:** Works offline-first with `localStorage` and automatically syncs user data seamlessly to the cloud database when online.
-* **Multi-Device Support:** Access your personal dashboard and data from any device by signing into your account.
+### 🔐 Instant Guest Mode & Cloud Sync
+* **Zero-Friction Access:** Directly opens into the live utility in local Guest Mode without requiring an upfront login barrier.
+* **Hybrid Storage:** Works offline-first with `localStorage` and automatically syncs user data seamlessly to the Supabase cloud database when signed in.
+* **Smart Data Migration:** When a guest user decides to register or sign in, all local progress (attendance, expenses, tasks) is automatically migrated into their cloud account.
 
 ### 📅 Today (Daily Dashboard)
 Your central daily hub. Mark attendance per subject, log daily expenses or savings, manage task backlogs, and record journal entries—all on one convenient screen.
 
-### 🎓 Attendance Tracking
+### 🎓 Attendance Tracking & 75% Bunk Predictor
+* **75% Goal Predictor:** Solves student attendance anxiety by calculating exactly how many lectures can be safely skipped or how many consecutive classes are needed to reach 75%.
 * **Smart Calendar:** Color-coded monthly calendar views (present, absent, mixed days).
 * **Flexible Logging:** Record or adjust attendance for any date—including past dates—per subject.
 * **Rich Metrics:** Monthly and all-time attendance percentages, plus an intelligent streak counter that ignores no-class days.
-* **Subject Management:** Add, edit, and track individual per-subject progress meters.
+* **Subject Management:** Add, edit, and track individual per-subject progress meters with real-time bunk margin badges.
 
 ### 💰 Money & Budgeting
 * **Historical Views:** Filter financial activity by Week, Month, or Year.

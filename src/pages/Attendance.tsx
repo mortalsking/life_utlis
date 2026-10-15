@@ -3,6 +3,7 @@ import Icon from "../components/Icon";
 import { useStore } from "../store";
 import {
   calcAttStats,
+  calcBunkAdvice,
   calcStreak,
   calcSubjectAttStats,
   fmtDate,
@@ -55,6 +56,11 @@ export default function Attendance() {
   const perSubject = useMemo(
     () => calcSubjectAttStats(data.attendance),
     [data.attendance],
+  );
+
+  const overallAdvice = useMemo(
+    () => calcBunkAdvice(stats.present, stats.total, 75),
+    [stats],
   );
 
   const cells = useMemo(() => monthMatrix(viewMonth), [viewMonth]);
@@ -111,6 +117,25 @@ export default function Attendance() {
           <small className="muted small-text">active days</small>
         </div>
       </div>
+
+      {stats.total > 0 && (
+        <div className={`card bunk-advisor-card ${overallAdvice.status}`}>
+          <div className="bunk-advisor-header">
+            <span className="bunk-advisor-icon">
+              {overallAdvice.status === "safe" ? "🛡️" : overallAdvice.status === "short" ? "🚨" : "⚖️"}
+            </span>
+            <div style={{ flex: 1 }}>
+              <div className="row-between">
+                <strong>75% Goal Predictor</strong>
+                <span className={`pill ${overallAdvice.status === "safe" ? "present" : overallAdvice.status === "short" ? "absent" : "mixed"}`}>
+                  {overallAdvice.status === "safe" ? "Safe" : overallAdvice.status === "short" ? "Short" : "On Target"}
+                </span>
+              </div>
+              <p className="bunk-message">{overallAdvice.message}</p>
+            </div>
+          </div>
+        </div>
+      )}
 
       <section className="card calendar-card">
         <div className="cal-nav">
@@ -239,23 +264,31 @@ export default function Attendance() {
       {/* Subject Statistics */}
       {perSubject.length > 0 && (
         <section className="card">
-          <h3>Subject Statistics</h3>
-          {perSubject.map((s) => (
-            <div key={s.subject} className="meter-row">
-              <div className="meter-head">
-                <span>{s.subject}</span>
-                <span className="muted small-text">
-                  {s.present}/{s.total} attended · {s.percent}%
-                </span>
+          <h3>Subject Statistics & Bunk Margin</h3>
+          {perSubject.map((s) => {
+            const subjAdvice = calcBunkAdvice(s.present, s.total, 75);
+            return (
+              <div key={s.subject} className="meter-row">
+                <div className="meter-head">
+                  <span>{s.subject}</span>
+                  <span className="muted small-text">
+                    {s.present}/{s.total} attended · {s.percent}%
+                  </span>
+                </div>
+                <div className="meter">
+                  <div
+                    className={`meter-fill ${s.percent >= 75 ? "" : "warn"}`}
+                    style={{ width: `${s.percent}%` }}
+                  />
+                </div>
+                <div style={{ marginTop: "0.35rem" }}>
+                  <span className={`bunk-tag ${subjAdvice.status}`}>
+                    {subjAdvice.message}
+                  </span>
+                </div>
               </div>
-              <div className="meter">
-                <div
-                  className={`meter-fill ${s.percent >= 75 ? "" : "warn"}`}
-                  style={{ width: `${s.percent}%` }}
-                />
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </section>
       )}
 

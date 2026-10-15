@@ -25,11 +25,10 @@ const TABS: { id: Tab; icon: IconName; label: string }[] = [
 
 export default function App() {
   const [tab, setTab] = useState<Tab>("today");
-  const { theme, setTheme, session, signOut } = useStore();
-
-  if (!session) {
-    return <Auth />;
-  }
+  const { theme, setTheme, session, signOut, showAuthModal, setShowAuthModal } = useStore();
+  const [bannerDismissed, setBannerDismissed] = useState(() => {
+    return sessionStorage.getItem("lifeutils-guest-banner-dismissed") === "1";
+  });
 
   return (
     <div className="shell">
@@ -43,7 +42,24 @@ export default function App() {
             <span>{fmtDate(todayISO())}</span>
           </div>
         </div>
-        <div style={{ display: "flex", gap: "0.5rem" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+          {!session ? (
+            <button
+              className="btn-auth-badge"
+              onClick={() => setShowAuthModal(true)}
+              title="Sign in or register to sync your data"
+            >
+              <span className="guest-dot" />
+              <span>Guest &middot; Sign In</span>
+            </button>
+          ) : (
+            <div className="user-badge" title={`Signed in as ${session.user.email}`}>
+              <span className="user-avatar">{session.user.email?.[0]?.toUpperCase() ?? "U"}</span>
+              <button className="icon-btn" onClick={signOut} title="Sign Out">
+                <Icon name="logOut" size={16} />
+              </button>
+            </div>
+          )}
           <button
             className="icon-btn"
             onClick={() => setTheme(theme === "light" ? "dark" : "light")}
@@ -51,11 +67,33 @@ export default function App() {
           >
             <Icon name={theme === "light" ? "moon" : "sun"} size={18} />
           </button>
-          <button className="icon-btn" onClick={signOut} title="Sign Out">
-            <Icon name="logOut" size={18} />
-          </button>
         </div>
       </header>
+
+      {!session && !bannerDismissed && (
+        <div className="guest-banner">
+          <div className="guest-banner-content">
+            <span className="guest-banner-icon">✨</span>
+            <p>
+              <strong>Instant Access:</strong> You're in Guest Mode.{" "}
+              <button className="guest-banner-link" onClick={() => setShowAuthModal(true)}>
+                Sign in or register free
+              </button>{" "}
+              to sync across phone & laptop.
+            </p>
+          </div>
+          <button
+            className="guest-banner-close"
+            onClick={() => {
+              setBannerDismissed(true);
+              sessionStorage.setItem("lifeutils-guest-banner-dismissed", "1");
+            }}
+            title="Dismiss banner"
+          >
+            ✕
+          </button>
+        </div>
+      )}
 
       <main key={tab} className="page-host">
         {tab === "today" && <Today />}
@@ -79,6 +117,14 @@ export default function App() {
           </button>
         ))}
       </nav>
+
+      {showAuthModal && (
+        <div className="modal-backdrop" onClick={() => setShowAuthModal(false)}>
+          <div className="modal-container" onClick={(e) => e.stopPropagation()}>
+            <Auth onClose={() => setShowAuthModal(false)} />
+          </div>
+        </div>
+      )}
     </div>
   );
 }

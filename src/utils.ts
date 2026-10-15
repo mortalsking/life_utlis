@@ -162,3 +162,41 @@ export function calcStreak(entries: { date: string; status: string }[], today: s
   }
   return count;
 }
+
+export interface BunkAdvice {
+  status: "safe" | "short" | "exact" | "no_data";
+  margin: number;
+  message: string;
+}
+
+export function calcBunkAdvice(present: number, total: number, targetPct = 75): BunkAdvice {
+  if (total === 0) return { status: "no_data", margin: 0, message: "No lectures logged yet" };
+  const currentPct = (present / total) * 100;
+  const target = targetPct / 100;
+
+  if (currentPct > targetPct) {
+    const canBunk = Math.floor(present / target - total);
+    return {
+      status: "safe",
+      margin: canBunk,
+      message:
+        canBunk === 0
+          ? "On the borderline! Don't miss the next lecture."
+          : `Safe to miss ${canBunk} lecture${canBunk > 1 ? "s" : ""} and stay >= ${targetPct}%`,
+    };
+  } else if (currentPct < targetPct) {
+    const needToAttend = Math.ceil((target * total - present) / (1 - target));
+    return {
+      status: "short",
+      margin: needToAttend,
+      message: `Need to attend ${needToAttend} consecutive lecture${needToAttend > 1 ? "s" : ""} to reach ${targetPct}%`,
+    };
+  } else {
+    return {
+      status: "exact",
+      margin: 0,
+      message: `Exactly at ${targetPct}%! Don't miss your next lecture.`,
+    };
+  }
+}
+
