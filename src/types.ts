@@ -40,8 +40,54 @@ export interface LinkItem {
   category: string;
 }
 
+export type ThemeMode = "light" | "dark" | "system";
+export type AccentColor = "cyan" | "violet" | "emerald" | "amber" | "rose" | "blue";
+
+export interface AccentOption {
+  id: AccentColor;
+  label: string;
+  color: string;
+  secondary: string;
+}
+
+export const ACCENT_OPTIONS: AccentOption[] = [
+  { id: "cyan", label: "Cyan", color: "#38bdf8", secondary: "#818cf8" },
+  { id: "violet", label: "Violet", color: "#a855f7", secondary: "#c084fc" },
+  { id: "emerald", label: "Emerald", color: "#10b981", secondary: "#34d399" },
+  { id: "amber", label: "Amber", color: "#f59e0b", secondary: "#fbbf24" },
+  { id: "rose", label: "Rose", color: "#f43f5e", secondary: "#fb7185" },
+  { id: "blue", label: "Electric Blue", color: "#3b82f6", secondary: "#60a5fa" },
+];
+
+export interface UserSettings {
+  userName: string;
+  avatarUrl: string;
+  appStyle: "Classic" | "Modern" | "Minimal";
+  themeMode: ThemeMode;
+  accentColor: AccentColor;
+  targetAttendancePct: number;
+  currencySymbol: string;
+  enableAnimations: boolean;
+  compactMode: boolean;
+  soundEffects: boolean;
+}
+
+export const DEFAULT_SETTINGS: UserSettings = {
+  userName: "Rushi",
+  avatarUrl: "https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?w=200&auto=format&fit=crop&q=80",
+  appStyle: "Classic",
+  themeMode: "dark",
+  accentColor: "violet",
+  targetAttendancePct: 75,
+  currencySymbol: "₹",
+  enableAnimations: true,
+  compactMode: false,
+  soundEffects: true,
+};
+
 export interface AppData {
   version: number;
+  settings: UserSettings;
   txs: Tx[];
   attendance: AttEntry[];
   tasks: Task[];
@@ -70,7 +116,8 @@ const KEY = "lifeutils-data";
 
 export function defaultData(): AppData {
   return {
-    version: 1,
+    version: 2,
+    settings: { ...DEFAULT_SETTINGS },
     txs: [],
     attendance: [],
     tasks: [],
@@ -83,10 +130,30 @@ export function defaultData(): AppData {
 export function loadData(): AppData {
   try {
     const raw = localStorage.getItem(KEY);
-    if (!raw) return defaultData();
+    const legacyTheme = localStorage.getItem("lifeutils-theme") as "light" | "dark" | null;
+    const baseSettings: UserSettings = {
+      ...DEFAULT_SETTINGS,
+      ...(legacyTheme ? { themeMode: legacyTheme } : {}),
+    };
+
+    if (!raw) {
+      return {
+        ...defaultData(),
+        settings: baseSettings,
+      };
+    }
+
     const parsed = JSON.parse(raw) as Partial<AppData>;
     if (typeof parsed !== "object" || parsed === null) return defaultData();
-    return { ...defaultData(), ...parsed };
+
+    return {
+      ...defaultData(),
+      ...parsed,
+      settings: {
+        ...baseSettings,
+        ...(parsed.settings || {}),
+      },
+    };
   } catch {
     return defaultData();
   }

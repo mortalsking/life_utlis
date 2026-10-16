@@ -15,7 +15,7 @@ import {
 } from "../utils";
 
 export default function Summary() {
-  const { data, replaceAll, session, user, setShowAuthModal } = useStore();
+  const { data, replaceAll, session, user, setShowAuthModal, setShowSettingsModal, playHaptic } = useStore();
   const fileRef = useRef<HTMLInputElement>(null);
 
   const att = useMemo(() => {
@@ -190,6 +190,17 @@ export default function Summary() {
             </p>
           </div>
         )}
+
+        <button
+          className="btn primary full"
+          style={{ marginBottom: "0.75rem" }}
+          onClick={() => {
+            playHaptic("click");
+            setShowSettingsModal(true);
+          }}
+        >
+          <Icon name="settings" size={17} /> Open Settings & Appearance
+        </button>
 
         <h4>Manual Backup</h4>
         <p className="muted small">

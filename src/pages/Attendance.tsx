@@ -34,7 +34,8 @@ function monthLabel(ym: string): string {
 }
 
 export default function Attendance() {
-  const { data, markAttendance, clearAttendance, delAtt, addSubject, removeSubject } = useStore();
+  const { data, settings, playHaptic, markAttendance, clearAttendance, delAtt, addSubject, removeSubject } = useStore();
+  const targetPct = settings?.targetAttendancePct || 75;
   const today = todayISO();
   const [viewMonth, setViewMonth] = useState(() => today.slice(0, 7));
   const [selectedDate, setSelectedDate] = useState(today);
@@ -59,8 +60,8 @@ export default function Attendance() {
   );
 
   const overallAdvice = useMemo(
-    () => calcBunkAdvice(stats.present, stats.total, 75),
-    [stats],
+    () => calcBunkAdvice(stats.present, stats.total, targetPct),
+    [stats, targetPct],
   );
 
   const cells = useMemo(() => monthMatrix(viewMonth), [viewMonth]);
@@ -126,7 +127,7 @@ export default function Attendance() {
             </span>
             <div style={{ flex: 1 }}>
               <div className="row-between">
-                <strong>75% Goal Predictor</strong>
+                <strong>{targetPct}% Goal Predictor</strong>
                 <span className={`pill ${overallAdvice.status === "safe" ? "present" : overallAdvice.status === "short" ? "absent" : "mixed"}`}>
                   {overallAdvice.status === "safe" ? "Safe" : overallAdvice.status === "short" ? "Short" : "On Target"}
                 </span>
@@ -244,13 +245,19 @@ export default function Attendance() {
               </select>
               <button
                 className="btn primary"
-                onClick={() => markAttendance(selectedDate, selectedAttendanceSubject, "present")}
+                onClick={() => {
+                  playHaptic("success");
+                  markAttendance(selectedDate, selectedAttendanceSubject, "present");
+                }}
               >
                 + Present
               </button>
               <button
                 className="btn neg"
-                onClick={() => markAttendance(selectedDate, selectedAttendanceSubject, "absent")}
+                onClick={() => {
+                  playHaptic("click");
+                  markAttendance(selectedDate, selectedAttendanceSubject, "absent");
+                }}
               >
                 + Absent
               </button>
@@ -266,7 +273,7 @@ export default function Attendance() {
         <section className="card">
           <h3>Subject Statistics & Bunk Margin</h3>
           {perSubject.map((s) => {
-            const subjAdvice = calcBunkAdvice(s.present, s.total, 75);
+            const subjAdvice = calcBunkAdvice(s.present, s.total, targetPct);
             return (
               <div key={s.subject} className="meter-row">
                 <div className="meter-head">
@@ -277,7 +284,7 @@ export default function Attendance() {
                 </div>
                 <div className="meter">
                   <div
-                    className={`meter-fill ${s.percent >= 75 ? "" : "warn"}`}
+                    className={`meter-fill ${s.percent >= targetPct ? "" : "warn"}`}
                     style={{ width: `${s.percent}%` }}
                   />
                 </div>

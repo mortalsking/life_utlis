@@ -84,14 +84,86 @@ export function fmtDayShort(iso: string): string {
   return d.toLocaleDateString(undefined, { day: "numeric", month: "short" });
 }
 
-const inr = new Intl.NumberFormat("en-IN", {
-  style: "currency",
-  currency: "INR",
-  maximumFractionDigits: 0,
-});
+let currentCurrency = "₹";
 
-export function fmtMoney(n: number): string {
-  return inr.format(n);
+export function setCurrencySymbol(symbol: string) {
+  currentCurrency = symbol || "₹";
+}
+
+export function fmtMoney(n: number, symbol?: string): string {
+  const sym = symbol || currentCurrency || "₹";
+  const rounded = Math.round(n).toLocaleString();
+  return `${sym}${rounded}`;
+}
+
+// Micro-interaction Audio / Haptic Feedback Synthesizer
+let audioCtx: AudioContext | null = null;
+
+export function playAudioFeedback(
+  type: "click" | "success" | "toggle" | "delete" = "click",
+  enabled = true,
+) {
+  if (!enabled || typeof window === "undefined") return;
+  try {
+    const AudioContextClass =
+      window.AudioContext ||
+      (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+    if (!AudioContextClass) return;
+    if (!audioCtx) {
+      audioCtx = new AudioContextClass();
+    }
+    if (audioCtx.state === "suspended") {
+      audioCtx.resume().catch(() => {});
+    }
+
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    const now = audioCtx.currentTime;
+
+    if (type === "click") {
+      osc.type = "sine";
+      osc.frequency.setValueAtTime(600, now);
+      osc.frequency.exponentialRampToValueAtTime(300, now + 0.04);
+      gain.gain.setValueAtTime(0.04, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.04);
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      osc.start(now);
+      osc.stop(now + 0.04);
+    } else if (type === "toggle") {
+      osc.type = "triangle";
+      osc.frequency.setValueAtTime(440, now);
+      osc.frequency.exponentialRampToValueAtTime(880, now + 0.06);
+      gain.gain.setValueAtTime(0.05, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.06);
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      osc.start(now);
+      osc.stop(now + 0.06);
+    } else if (type === "success") {
+      osc.type = "sine";
+      osc.frequency.setValueAtTime(523.25, now); // C5
+      osc.frequency.setValueAtTime(659.25, now + 0.06); // E5
+      gain.gain.setValueAtTime(0.06, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.16);
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      osc.start(now);
+      osc.stop(now + 0.16);
+    } else if (type === "delete") {
+      osc.type = "sawtooth";
+      osc.frequency.setValueAtTime(260, now);
+      osc.frequency.exponentialRampToValueAtTime(140, now + 0.07);
+      gain.gain.setValueAtTime(0.04, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.07);
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      osc.start(now);
+      osc.stop(now + 0.07);
+    }
+  } catch {
+    // Ignore audio policy or device restriction errors silently
+  }
 }
 
 export function pct(part: number, total: number): number {

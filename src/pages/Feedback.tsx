@@ -29,8 +29,21 @@ export default function FeedbackPage() {
   }, []);
 
   useEffect(() => {
-    fetchFeedbacks();
-  }, [fetchFeedbacks]);
+    let isMounted = true;
+    const loadFeedbacks = async () => {
+      const { data, error } = await supabase
+        .from("feedback")
+        .select("*")
+        .order("created_at", { ascending: false });
+      if (isMounted && !error && data) {
+        setFeedbacks(data);
+      }
+    };
+    void loadFeedbacks();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

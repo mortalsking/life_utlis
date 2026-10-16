@@ -5,6 +5,7 @@ import { supabase } from "./supabaseClient";
 import { todayISO } from "./utils";
 import {
   defaultData,
+  DEFAULT_SETTINGS,
   loadData,
   saveData,
   uid,
@@ -12,10 +13,15 @@ import {
   type AttStatus,
   type JournalEntry,
   type Task,
+  type UserSettings,
 } from "./types";
+import { playAudioFeedback, setCurrencySymbol } from "./utils";
 
 export interface Store {
   data: AppData;
+  settings: UserSettings;
+  updateSettings: (partial: Partial<UserSettings>) => void;
+  playHaptic: (type?: "click" | "success" | "toggle" | "delete") => void;
   addTx: (tx: { date: string; kind: "expense" | "saved"; category: string; amount: number; note?: string }) => void;
   delTx: (id: string) => void;
   markAttendance: (date: string, subject: string, status: AttStatus) => void;
@@ -39,6 +45,8 @@ export interface Store {
   isGuest: boolean;
   showAuthModal: boolean;
   setShowAuthModal: (show: boolean) => void;
+  showSettingsModal: boolean;
+  setShowSettingsModal: (show: boolean) => void;
   signOut: () => Promise<void>;
 }
 
@@ -46,14 +54,81 @@ const StoreContext = createContext<Store | null>(null);
 
 export function StoreProvider({ children }: { children: ReactNode }) {
   const [data, setData] = useState<AppData>(loadData);
-  const [theme, setTheme] = useState<"light" | "dark">(() => {
-    const stored = localStorage.getItem("lifeutils-theme");
-    return stored === "light" ? "light" : "dark";
-  });
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [isLoaded, setIsLoaded] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
+  const [showSettingsModal, setShowSettingsModal] = useState(false);
+
+  // Track system dark mode preference
+  const [systemIsDark, setSystemIsDark] = useState(() => {
+    if (typeof window === "undefined" || !window.matchMedia) return true;
+    return window.matchMedia("(prefers-color-scheme: dark)").matches;
+  });
+
+  useEffect(() => {
+    if (typeof window === "undefined" || !window.matchMedia) return;
+    const media = window.matchMedia("(prefers-color-scheme: dark)");
+    const handler = (e: MediaQueryListEvent) => setSystemIsDark(e.matches);
+    media.addEventListener("change", handler);
+    return () => media.removeEventListener("change", handler);
+  }, []);
+
+  // Listen to messages from React Native WebView (e.g. mobile settings button triggering web modal)
+  useEffect(() => {
+    const handleNativeMessage = (event: MessageEvent) => {
+      try {
+        const raw = typeof event.data === "string" ? JSON.parse(event.data) : event.data;
+        if (raw?.type === "OPEN_SETTINGS") {
+          setShowSettingsModal(true);
+        } else if (raw?.type === "OPEN_AUTH") {
+          setShowAuthModal(true);
+        }
+      } catch {
+        // Ignore unparsed messages
+      }
+    };
+
+    window.addEventListener("message", handleNativeMessage);
+    // Also listen to document message for Android WebView injection
+    document.addEventListener("message" as unknown as keyof DocumentEventMap, handleNativeMessage as unknown as EventListener);
+
+    return () => {
+      window.removeEventListener("message", handleNativeMessage);
+      document.removeEventListener("message" as unknown as keyof DocumentEventMap, handleNativeMessage as unknown as EventListener);
+    };
+  }, []);
+
+  // Compute effective theme
+  const currentSettings = data.settings || DEFAULT_SETTINGS;
+  const effectiveTheme: "light" | "dark" =
+    currentSettings.themeMode === "system"
+      ? systemIsDark
+        ? "dark"
+        : "light"
+      : currentSettings.themeMode;
+
+  // Apply Appearance Attributes & CSS Variables to documentElement
+  useEffect(() => {
+    const root = document.documentElement;
+    root.classList.toggle("light", effectiveTheme === "light");
+    root.classList.toggle("dark", effectiveTheme === "dark");
+    root.setAttribute("data-accent", currentSettings.accentColor || "cyan");
+    root.setAttribute("data-compact", currentSettings.compactMode ? "true" : "false");
+    root.setAttribute("data-animations", currentSettings.enableAnimations ? "true" : "false");
+    setCurrencySymbol(currentSettings.currencySymbol || "₹");
+    localStorage.setItem("lifeutils-theme", effectiveTheme);
+
+    // Notify React Native native container of theme change if wrapped
+    try {
+      const rn = (window as unknown as { ReactNativeWebView?: { postMessage: (msg: string) => void } }).ReactNativeWebView;
+      if (rn && typeof rn.postMessage === "function") {
+        rn.postMessage(JSON.stringify({ type: "THEME_CHANGED", theme: effectiveTheme }));
+      }
+    } catch {
+      // Ignore
+    }
+  }, [effectiveTheme, currentSettings.accentColor, currentSettings.compactMode, currentSettings.enableAnimations, currentSettings.currencySymbol]);
 
   useEffect(() => {
     // Fetches user data from Supabase or inserts defaults if missing
@@ -83,7 +158,14 @@ export function StoreProvider({ children }: { children: ReactNode }) {
           await supabase.from("user_data").upsert({ id: u.id, data: local });
           setData(local);
         } else {
-          setData(cloudData);
+          setData({
+            ...defaultData(),
+            ...cloudData,
+            settings: {
+              ...DEFAULT_SETTINGS,
+              ...(cloudData.settings || {}),
+            },
+          });
         }
       } else if (error && error.code === "PGRST116") {
         // Brand new user: sync current guest data to cloud!
@@ -128,12 +210,6 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
-    localStorage.setItem("lifeutils-theme", theme);
-    document.documentElement.classList.toggle("light", theme === "light");
-    document.documentElement.classList.toggle("dark", theme === "dark");
-  }, [theme]);
-
-  useEffect(() => {
     // Save locally
     saveData(data);
     // Sync to supabase if logged in
@@ -144,13 +220,36 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
   const store: Store = {
     data,
-    theme,
-    setTheme,
+    settings: currentSettings,
+    updateSettings: (partial) => {
+      setData((d) => ({
+        ...d,
+        settings: {
+          ...(d.settings || DEFAULT_SETTINGS),
+          ...partial,
+        },
+      }));
+    },
+    playHaptic: (type = "click") => {
+      playAudioFeedback(type, currentSettings.soundEffects);
+    },
+    theme: effectiveTheme,
+    setTheme: (t) => {
+      setData((d) => ({
+        ...d,
+        settings: {
+          ...(d.settings || DEFAULT_SETTINGS),
+          themeMode: t,
+        },
+      }));
+    },
     session,
     user,
     isGuest: !session,
     showAuthModal,
     setShowAuthModal,
+    showSettingsModal,
+    setShowSettingsModal,
     signOut: async () => {
       await supabase.auth.signOut();
       setSession(null);
