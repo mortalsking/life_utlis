@@ -1,17 +1,20 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, lazy, Suspense } from "react";
 import Icon, { type IconName } from "./components/Icon";
 import { useStore } from "./store";
-import Attendance from "./pages/Attendance";
-import Backlog from "./pages/Backlog";
-import Money from "./pages/Money";
-import Notes from "./pages/Notes";
-import Summary from "./pages/Summary";
 import Today from "./pages/Today";
-import Auth from "./pages/Auth";
-import FeedbackPage from "./pages/Feedback";
-import SettingsPage from "./pages/SettingsPage";
-import SettingsModal from "./components/SettingsModal";
 import { fmtDate, todayISO } from "./utils";
+
+// Code-split pages for instant initial paint & minimal bundle
+const Attendance = lazy(() => import("./pages/Attendance"));
+const Backlog = lazy(() => import("./pages/Backlog"));
+const Money = lazy(() => import("./pages/Money"));
+const Notes = lazy(() => import("./pages/Notes"));
+const Summary = lazy(() => import("./pages/Summary"));
+const FeedbackPage = lazy(() => import("./pages/Feedback"));
+const SettingsPage = lazy(() => import("./pages/SettingsPage"));
+const Auth = lazy(() => import("./pages/Auth"));
+const SettingsModal = lazy(() => import("./components/SettingsModal"));
+const TermsModal = lazy(() => import("./components/TermsModal"));
 
 type Tab = "today" | "attend" | "money" | "tasks" | "notes" | "stats" | "forum" | "settings";
 
@@ -30,7 +33,9 @@ export default function App() {
   const {
     theme,
     setTheme,
+    settings,
     session,
+    user,
     signOut,
     showAuthModal,
     setShowAuthModal,
@@ -41,6 +46,7 @@ export default function App() {
   const [bannerDismissed, setBannerDismissed] = useState(() => {
     return sessionStorage.getItem("lifeutils-guest-banner-dismissed") === "1";
   });
+  const [showTermsModal, setShowTermsModal] = useState(false);
 
   // Listen for native shell postMessages (e.g. from React Native Expo shell)
   useEffect(() => {
@@ -51,6 +57,11 @@ export default function App() {
           setShowSettingsModal(true);
         } else if (data?.type === "SET_THEME" && (data.theme === "light" || data.theme === "dark")) {
           setTheme(data.theme);
+        } else if (data?.type === "NAVIGATE_TAB" && data.tab) {
+          setTab(data.tab);
+          setShowSettingsModal(false);
+        } else if (data?.type === "OPEN_TERMS") {
+          setShowTermsModal(true);
         }
       } catch {
         // ignore
@@ -69,15 +80,25 @@ export default function App() {
     <div className="shell">
       <header className="topbar">
         <div className="brand">
-          <span className="logo-mark">
-            <Icon name="check" size={16} />
-          </span>
+          <img src="/logo.jpg" alt="Life Utils Logo" className="brand-logo-img" />
           <div className="brand-text">
             <h1>Life Utils</h1>
             <span>{fmtDate(todayISO())}</span>
           </div>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: "0.45rem" }}>
+          {/* Direct APK Download Button */}
+          <a
+            href="/life-utils.apk"
+            download="life-utils.apk"
+            className="btn-download-app"
+            title="Download Life Utils Android APK"
+          >
+            <Icon name="smartphone" size={15} />
+            <span className="btn-download-label">Get App</span>
+            <span className="btn-download-pill">APK</span>
+          </a>
+
           {!session ? (
             <button
               className="btn-auth-badge"
@@ -91,8 +112,32 @@ export default function App() {
               <span>Guest &middot; Sign In</span>
             </button>
           ) : (
-            <div className="user-badge" title={`Signed in as ${session.user.email}`}>
-              <span className="user-avatar">{session.user.email?.[0]?.toUpperCase() ?? "U"}</span>
+            <div
+              className="user-badge"
+              title={`Signed in as ${
+                settings.userName ||
+                user?.user_metadata?.username ||
+                user?.user_metadata?.full_name ||
+                session.user.email?.split("@")[0] ||
+                "User"
+              }`}
+            >
+              <span className="user-avatar">
+                {(
+                  settings.userName ||
+                  user?.user_metadata?.username ||
+                  user?.user_metadata?.full_name ||
+                  session.user.email?.split("@")[0] ||
+                  "U"
+                )[0]?.toUpperCase()}
+              </span>
+              <span className="user-badge-name">
+                {settings.userName ||
+                  user?.user_metadata?.username ||
+                  user?.user_metadata?.full_name ||
+                  session.user.email?.split("@")[0] ||
+                  "User"}
+              </span>
               <button
                 className="icon-btn"
                 onClick={() => {
@@ -163,14 +208,27 @@ export default function App() {
       )}
 
       <main key={tab} className="page-host">
-        {tab === "today" && <Today />}
-        {tab === "attend" && <Attendance />}
-        {tab === "money" && <Money />}
-        {tab === "tasks" && <Backlog />}
-        {tab === "notes" && <Notes />}
-        {tab === "stats" && <Summary />}
-        {tab === "forum" && <FeedbackPage />}
-        {tab === "settings" && <SettingsPage onNavigateTab={(t) => setTab(t)} />}
+        <Suspense
+          fallback={
+            <div style={{ display: "flex", justifyContent: "center", alignItems: "center", minHeight: "220px", width: "100%" }}>
+              <div style={{ width: "100%", height: "180px", borderRadius: "18px", background: "rgba(148, 163, 184, 0.08)", animation: "pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite" }} />
+            </div>
+          }
+        >
+          {tab === "today" && <Today />}
+          {tab === "attend" && <Attendance />}
+          {tab === "money" && <Money />}
+          {tab === "tasks" && <Backlog />}
+          {tab === "notes" && <Notes />}
+          {tab === "stats" && <Summary />}
+          {tab === "forum" && <FeedbackPage />}
+          {tab === "settings" && (
+            <SettingsPage
+              onNavigateTab={(t) => setTab(t)}
+              onOpenTerms={() => setShowTermsModal(true)}
+            />
+          )}
+        </Suspense>
       </main>
 
       <nav className="bottom-nav">
@@ -192,7 +250,9 @@ export default function App() {
       {showAuthModal && (
         <div className="modal-backdrop" onClick={() => setShowAuthModal(false)}>
           <div className="modal-container" onClick={(e) => e.stopPropagation()}>
-            <Auth onClose={() => setShowAuthModal(false)} />
+            <Suspense fallback={<div style={{ padding: "2rem", textAlign: "center", color: "var(--muted)" }}>Loading...</div>}>
+              <Auth onClose={() => setShowAuthModal(false)} />
+            </Suspense>
           </div>
         </div>
       )}
@@ -200,13 +260,29 @@ export default function App() {
       {showSettingsModal && (
         <div className="modal-backdrop" onClick={() => setShowSettingsModal(false)}>
           <div className="modal-container" onClick={(e) => e.stopPropagation()}>
-            <SettingsModal
-              onClose={() => setShowSettingsModal(false)}
-              onNavigateTab={(t) => {
-                setTab(t);
-                setShowSettingsModal(false);
-              }}
-            />
+            <Suspense fallback={<div style={{ padding: "2rem", textAlign: "center", color: "var(--muted)" }}>Loading...</div>}>
+              <SettingsModal
+                onClose={() => setShowSettingsModal(false)}
+                onNavigateTab={(t) => {
+                  setTab(t);
+                  setShowSettingsModal(false);
+                }}
+                onOpenTerms={() => {
+                  setShowSettingsModal(false);
+                  setShowTermsModal(true);
+                }}
+              />
+            </Suspense>
+          </div>
+        </div>
+      )}
+
+      {showTermsModal && (
+        <div className="modal-backdrop" onClick={() => setShowTermsModal(false)}>
+          <div className="modal-container" onClick={(e) => e.stopPropagation()}>
+            <Suspense fallback={<div style={{ padding: "2rem", textAlign: "center", color: "var(--muted)" }}>Loading...</div>}>
+              <TermsModal onClose={() => setShowTermsModal(false)} />
+            </Suspense>
           </div>
         </div>
       )}

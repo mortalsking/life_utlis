@@ -74,7 +74,7 @@ export interface UserSettings {
 
 export const DEFAULT_SETTINGS: UserSettings = {
   userName: "Rushi",
-  avatarUrl: "https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?w=200&auto=format&fit=crop&q=80",
+  avatarUrl: "/logo.jpg",
   appStyle: "Classic",
   themeMode: "dark",
   accentColor: "violet",

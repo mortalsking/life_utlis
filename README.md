@@ -26,7 +26,7 @@
   * **Micro-interactions:** Smooth spring animations and tactile Web Audio synthetic haptic feedback.
 * 📱 **Mobile Native Shell Enhancements (Expo):**
   * Native Mobile topbar with **⚙️ Settings** button and floating quick-access trigger.
-  * Dedicated Native Settings Modal directly inside React Native with instant 1-tap **Connection Switcher** between **Local Dev Server (`http://192.168.x.x:5173`)** and **Cloud Vercel**.
+  * Dedicated Native Settings & Normal Account Registration Modal directly inside React Native for easy sign-up, sign-in, and instant cloud sync.
   * Hardware back-button handling, pull-to-refresh, OS share sheet, and dynamic status bar theming.
 
 ---

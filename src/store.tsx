@@ -146,6 +146,11 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         local.tasks.length > 0 ||
         local.journal.length > 0;
 
+      const metaUsername =
+        (u.user_metadata?.username as string) ||
+        (u.user_metadata?.full_name as string) ||
+        (u.user_metadata?.display_name as string);
+
       if (cloudRes && cloudRes.data) {
         const cloudData = cloudRes.data as AppData;
         const cloudEmpty =
@@ -153,10 +158,23 @@ export function StoreProvider({ children }: { children: ReactNode }) {
           cloudData.attendance.length === 0 &&
           cloudData.tasks.length === 0;
 
+        const resolvedName =
+          cloudData.settings?.userName && cloudData.settings.userName !== "Rushi"
+            ? cloudData.settings.userName
+            : metaUsername || cloudData.settings?.userName || (u.email ? u.email.split("@")[0] : "Rushi");
+
         if (hasLocalData && cloudEmpty) {
           // Seamlessly migrate guest data to cloud account
-          await supabase.from("user_data").upsert({ id: u.id, data: local });
-          setData(local);
+          const migrated = {
+            ...local,
+            settings: {
+              ...DEFAULT_SETTINGS,
+              ...(local.settings || {}),
+              userName: local.settings?.userName && local.settings.userName !== "Rushi" ? local.settings.userName : resolvedName,
+            },
+          };
+          await supabase.from("user_data").upsert({ id: u.id, data: migrated });
+          setData(migrated);
         } else {
           setData({
             ...defaultData(),
@@ -164,12 +182,25 @@ export function StoreProvider({ children }: { children: ReactNode }) {
             settings: {
               ...DEFAULT_SETTINGS,
               ...(cloudData.settings || {}),
+              userName: resolvedName,
             },
           });
         }
       } else if (error && error.code === "PGRST116") {
         // Brand new user: sync current guest data to cloud!
-        const initData = hasLocalData ? local : defaultData();
+        const resolvedName =
+          local.settings?.userName && local.settings.userName !== "Rushi"
+            ? local.settings.userName
+            : metaUsername || (u.email ? u.email.split("@")[0] : "Rushi");
+        const base = hasLocalData ? local : defaultData();
+        const initData = {
+          ...base,
+          settings: {
+            ...DEFAULT_SETTINGS,
+            ...(base.settings || {}),
+            userName: resolvedName,
+          },
+        };
         await supabase.from("user_data").insert([{ id: u.id, data: initData }]);
         setData(initData);
       }
@@ -187,6 +218,29 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         setData(loadData());
         setIsLoaded(true);
       }
+
+      // Notify React Native native container of auth change if wrapped
+      try {
+        const rn = (window as unknown as { ReactNativeWebView?: { postMessage: (msg: string) => void } }).ReactNativeWebView;
+        if (rn && typeof rn.postMessage === "function") {
+          const metaName =
+            (session?.user?.user_metadata?.username as string) ||
+            (session?.user?.user_metadata?.full_name as string) ||
+            (session?.user?.user_metadata?.display_name as string);
+          const activeName =
+            currentSettings.userName && currentSettings.userName !== "Rushi"
+              ? currentSettings.userName
+              : metaName || currentSettings.userName || (session?.user?.email ? session.user.email.split("@")[0] : "Rushi");
+
+          rn.postMessage(JSON.stringify({
+            type: "AUTH_CHANGED",
+            session: session ? { user: { email: session.user.email, id: session.user.id } } : null,
+            userName: activeName,
+          }));
+        }
+      } catch {
+        // Ignore
+      }
     };
 
     // Get initial session on mount
@@ -194,6 +248,14 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       if (!session?.user) {
         setData(loadData());
         setIsLoaded(true);
+        try {
+          const rn = (window as unknown as { ReactNativeWebView?: { postMessage: (msg: string) => void } }).ReactNativeWebView;
+          if (rn && typeof rn.postMessage === "function") {
+            rn.postMessage(JSON.stringify({ type: "AUTH_CHANGED", session: null }));
+          }
+        } catch {
+          // Ignore
+        }
       } else {
         handleSession(session);
       }
@@ -207,7 +269,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     });
 
     return () => subscription.unsubscribe();
-  }, []);
+  }, [currentSettings.userName]);
 
   useEffect(() => {
     // Save locally

@@ -31,7 +31,10 @@ export type IconName =
   | "database"
   | "heart"
   | "info"
-  | "edit";
+  | "edit"
+  | "search"
+  | "copy"
+  | "code";
 
 const paths: Record<IconName, ReactNode> = {
   home: (
@@ -204,6 +207,24 @@ const paths: Record<IconName, ReactNode> = {
   ),
   edit: (
     <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z" />
+  ),
+  search: (
+    <>
+      <circle cx="11" cy="11" r="8" />
+      <path d="m21 21-4.3-4.3" />
+    </>
+  ),
+  copy: (
+    <>
+      <rect width="14" height="14" x="8" y="8" rx="2" ry="2" />
+      <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2" />
+    </>
+  ),
+  code: (
+    <>
+      <polyline points="16 18 22 12 16 6" />
+      <polyline points="8 6 2 12 8 18" />
+    </>
   ),
 };
 

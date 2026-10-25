@@ -1,11 +1,14 @@
 import { useState } from "react";
 import { supabase } from "../supabaseClient";
+import { useStore } from "../store";
 
 interface AuthProps {
   onClose?: () => void;
 }
 
 export default function Auth({ onClose }: AuthProps) {
+  const { updateSettings } = useStore();
+  const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -22,19 +25,38 @@ export default function Auth({ onClose }: AuthProps) {
     try {
       if (isLogin) {
         const { error } = await supabase.auth.signInWithPassword({
-          email,
+          email: email.trim(),
           password,
         });
         if (error) throw error;
         onClose?.();
       } else {
-        const { error } = await supabase.auth.signUp({
-          email,
+        const chosenUsername = username.trim() || email.trim().split("@")[0];
+        const { data, error } = await supabase.auth.signUp({
+          email: email.trim(),
           password,
+          options: {
+            data: {
+              username: chosenUsername,
+              full_name: chosenUsername,
+              display_name: chosenUsername,
+            },
+          },
         });
         if (error) throw error;
-        setMsg("Registration successful! You can now log in.");
-        setIsLogin(true);
+
+        // Save username to settings right away
+        updateSettings({ userName: chosenUsername });
+
+        if (data?.session) {
+          setMsg(`Welcome, ${chosenUsername}! Signed in successfully.`);
+          setTimeout(() => {
+            onClose?.();
+          }, 1000);
+        } else {
+          setMsg(`Account created for ${chosenUsername}! You can now sign in.`);
+          setIsLogin(true);
+        }
       }
     } catch (err: any) {
       setError(err.message || "An error occurred");
@@ -79,6 +101,23 @@ export default function Auth({ onClose }: AuthProps) {
       )}
 
       <form onSubmit={handleAuth} className="space-y-4">
+        {!isLogin && (
+          <div className="space-y-2">
+            <label className="text-sm font-medium leading-none text-zinc-950 dark:text-zinc-50" htmlFor="username">
+              Username
+            </label>
+            <input
+              id="username"
+              type="text"
+              placeholder="e.g. rushi or alex_99"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              required={!isLogin}
+              autoFocus
+              className="flex h-10 w-full rounded-md border border-zinc-300 bg-transparent px-3 py-2 text-sm placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-zinc-950 focus:border-transparent dark:border-zinc-700 dark:text-zinc-50 dark:focus:ring-zinc-300 transition-colors"
+            />
+          </div>
+        )}
         <div className="space-y-2">
           <label className="text-sm font-medium leading-none text-zinc-950 dark:text-zinc-50" htmlFor="email">
             Email

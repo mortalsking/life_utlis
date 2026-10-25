@@ -15,7 +15,7 @@ import {
 } from "../utils";
 
 export default function Summary() {
-  const { data, replaceAll, session, user, setShowAuthModal, setShowSettingsModal, playHaptic } = useStore();
+  const { data, replaceAll, session, user, settings, setShowAuthModal, setShowSettingsModal, playHaptic } = useStore();
   const fileRef = useRef<HTMLInputElement>(null);
 
   const att = useMemo(() => {
@@ -171,6 +171,30 @@ export default function Summary() {
         </section>
       )}
 
+      <section className="card app-download-card">
+        <div className="app-download-header">
+          <div className="app-download-icon">
+            <Icon name="smartphone" size={26} />
+          </div>
+          <div>
+            <h3 style={{ margin: 0, fontSize: "1.05rem" }}>Life Utils for Android</h3>
+            <p className="muted small" style={{ margin: "2px 0 0" }}>
+              Native Android App &middot; Direct APK Install
+            </p>
+          </div>
+        </div>
+        <p className="small-text" style={{ margin: "0.65rem 0", lineHeight: 1.5 }}>
+          Install Life Utils on your Android phone to track attendance and expenses offline with instant multi-device cloud sync.
+        </p>
+        <a
+          href="/life-utils.apk"
+          download="life-utils.apk"
+          className="btn primary full btn-download-card-action"
+        >
+          <Icon name="download" size={17} /> Download Android APK (.apk)
+        </a>
+      </section>
+
       <section className="card">
         <h3>Cloud Sync & Data</h3>
         {!session ? (
@@ -186,7 +210,7 @@ export default function Summary() {
           <div style={{ marginBottom: "1rem", padding: "0.75rem", borderRadius: "12px", background: "rgba(52, 211, 153, 0.08)", border: "1px solid rgba(52, 211, 153, 0.2)" }}>
             <p className="small-text" style={{ margin: 0, color: "var(--good)", display: "flex", alignItems: "center", gap: "0.4rem" }}>
               <span style={{ width: "8px", height: "8px", borderRadius: "50%", background: "var(--good)" }} />
-              <strong>Cloud Sync Active:</strong> Synced with {user?.email}
+              <strong>Cloud Sync Active:</strong> Synced as {settings.userName || user?.email?.split("@")[0]}
             </p>
           </div>
         )}
