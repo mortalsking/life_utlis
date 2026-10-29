@@ -1,7 +1,8 @@
 import { useMemo, useRef } from "react";
 import Icon from "../components/Icon";
 import { useStore } from "../store";
-import { defaultData, type AppData } from "../types";
+import { defaultData } from "../types";
+import { toast } from "../notifications";
 import {
   calcAttStats,
   fmtDate,
@@ -15,7 +16,14 @@ import {
 } from "../utils";
 
 export default function Summary() {
-  const { data, replaceAll, session, user, settings, setShowAuthModal, setShowSettingsModal, playHaptic } = useStore();
+  const isNativeApp =
+    typeof window !== "undefined" &&
+    Boolean(
+      (window as unknown as { isReactNativeApp?: boolean }).isReactNativeApp ||
+      (window as unknown as { ReactNativeWebView?: unknown }).ReactNativeWebView
+    );
+
+  const { data, replaceAll, session, user, settings, setShowAuthModal, playHaptic } = useStore();
   const fileRef = useRef<HTMLInputElement>(null);
 
   const att = useMemo(() => {
@@ -60,6 +68,7 @@ export default function Summary() {
   );
 
   function exportJSON() {
+    playHaptic("click");
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
@@ -67,18 +76,21 @@ export default function Summary() {
     a.download = `lifeutils-backup-${todayISO()}.json`;
     a.click();
     URL.revokeObjectURL(url);
+    toast.success("✓ Backup exported successfully");
   }
 
   function importJSON(file: File) {
     const reader = new FileReader();
     reader.onload = () => {
       try {
-        const parsed = JSON.parse(String(reader.result)) as AppData;
+        const parsed = JSON.parse(String(reader.result));
         if (!parsed || typeof parsed !== "object") throw new Error("bad file");
         replaceAll(parsed);
-        alert("Backup restored.");
+        playHaptic("success");
+        toast.success("✓ Backup restored successfully");
       } catch {
-        alert("That file doesn't look like a Life Utils backup.");
+        playHaptic("delete");
+        toast.error("That file does not match a valid Life Utils backup.");
       }
     };
     reader.readAsText(file);
@@ -171,29 +183,36 @@ export default function Summary() {
         </section>
       )}
 
-      <section className="card app-download-card">
-        <div className="app-download-header">
-          <div className="app-download-icon">
-            <Icon name="smartphone" size={26} />
+      {!isNativeApp && (
+        <section className="card app-download-card">
+          <div className="app-download-header">
+            <div className="app-download-icon">
+              <Icon name="smartphone" size={26} />
+            </div>
+            <div>
+              <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                <h3 style={{ margin: 0, fontSize: "1.05rem" }}>Life Utils for Android</h3>
+                <span className="version-pill" style={{ fontSize: "0.72rem", padding: "2px 8px" }}>v1.2.1</span>
+              </div>
+              <p className="muted small" style={{ margin: "2px 0 0" }}>
+                Native Android App &middot; Direct APK Install
+              </p>
+            </div>
           </div>
-          <div>
-            <h3 style={{ margin: 0, fontSize: "1.05rem" }}>Life Utils for Android</h3>
-            <p className="muted small" style={{ margin: "2px 0 0" }}>
-              Native Android App &middot; Direct APK Install
-            </p>
+          <p className="small-text" style={{ margin: "0.65rem 0", lineHeight: 1.5 }}>
+            Install Life Utils on your Android phone to track attendance and expenses offline with instant multi-device cloud sync.
+          </p>
+          <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+            <a
+              href="/life-utils.apk"
+              download="life-utils.apk"
+              className="btn primary full btn-download-card-action"
+            >
+              <Icon name="download" size={17} /> Download Android APK (.apk)
+            </a>
           </div>
-        </div>
-        <p className="small-text" style={{ margin: "0.65rem 0", lineHeight: 1.5 }}>
-          Install Life Utils on your Android phone to track attendance and expenses offline with instant multi-device cloud sync.
-        </p>
-        <a
-          href="/life-utils.apk"
-          download="life-utils.apk"
-          className="btn primary full btn-download-card-action"
-        >
-          <Icon name="download" size={17} /> Download Android APK (.apk)
-        </a>
-      </section>
+        </section>
+      )}
 
       <section className="card">
         <h3>Cloud Sync & Data</h3>
@@ -214,17 +233,6 @@ export default function Summary() {
             </p>
           </div>
         )}
-
-        <button
-          className="btn primary full"
-          style={{ marginBottom: "0.75rem" }}
-          onClick={() => {
-            playHaptic("click");
-            setShowSettingsModal(true);
-          }}
-        >
-          <Icon name="settings" size={17} /> Open Settings & Appearance
-        </button>
 
         <h4>Manual Backup</h4>
         <p className="muted small">

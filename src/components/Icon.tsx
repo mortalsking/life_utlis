@@ -34,9 +34,16 @@ export type IconName =
   | "edit"
   | "search"
   | "copy"
-  | "code";
+  | "code"
+  | "bell";
 
 const paths: Record<IconName, ReactNode> = {
+  bell: (
+    <>
+      <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9" />
+      <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0" />
+    </>
+  ),
   home: (
     <>
       <path d="M3 9.5 12 2l9 7.5V20a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z" />

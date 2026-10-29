@@ -9,6 +9,7 @@ import {
   fmtDate,
   todayISO,
 } from "../utils";
+import { toast } from "../notifications";
 
 function monthMatrix(viewMonth: string): (string | null)[] {
   const [y, m] = viewMonth.split("-").map(Number);
@@ -248,6 +249,7 @@ export default function Attendance() {
                 onClick={() => {
                   playHaptic("success");
                   markAttendance(selectedDate, selectedAttendanceSubject, "present");
+                  toast.success(`✓ Marked Present for ${selectedAttendanceSubject}`);
                 }}
               >
                 + Present
@@ -257,6 +259,7 @@ export default function Attendance() {
                 onClick={() => {
                   playHaptic("click");
                   markAttendance(selectedDate, selectedAttendanceSubject, "absent");
+                  toast.info(`Marked Absent for ${selectedAttendanceSubject}`);
                 }}
               >
                 + Absent
@@ -304,7 +307,14 @@ export default function Attendance() {
         <h3>Manage Subjects</h3>
         <div className="chips" style={{ marginBottom: "0.75rem" }}>
           {data.subjects.map((s) => (
-            <button key={s} className="chip removable" onClick={() => removeSubject(s)}>
+            <button
+              key={s}
+              className="chip removable"
+              onClick={() => {
+                removeSubject(s);
+                toast.info(`Removed ${s}`);
+              }}
+            >
               {s} ×
             </button>
           ))}
@@ -313,7 +323,10 @@ export default function Attendance() {
           className="inline-form"
           onSubmit={(e) => {
             e.preventDefault();
-            addSubject(newSubject);
+            const trimmed = newSubject.trim();
+            if (!trimmed) return;
+            addSubject(trimmed);
+            toast.success(`✓ Added subject ${trimmed}`);
             setNewSubject("");
           }}
         >

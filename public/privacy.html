@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Privacy Policy - Life Utils</title>
+  <style>
+    :root {
+      --bg: #090d16;
+      --card-bg: rgba(255, 255, 255, 0.04);
+      --border: rgba(255, 255, 255, 0.1);
+      --text: #f1f5f9;
+      --text-muted: #94a3b8;
+      --primary: #38bdf8;
+      --accent: #818cf8;
+    }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      padding: 2rem 1rem;
+    }
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 2.5rem;
+      backdrop-filter: blur(12px);
+    }
+    h1 {
+      font-size: 2rem;
+      font-weight: 700;
+      margin-bottom: 0.5rem;
+      background: linear-gradient(135deg, #38bdf8, #818cf8);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .subtitle {
+      color: var(--text-muted);
+      font-size: 0.95rem;
+      margin-bottom: 2rem;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 1rem;
+    }
+    h2 {
+      font-size: 1.25rem;
+      margin-top: 1.75rem;
+      margin-bottom: 0.75rem;
+      color: #e2e8f0;
+    }
+    p, ul {
+      color: var(--text-muted);
+      font-size: 0.975rem;
+      margin-bottom: 1rem;
+    }
+    ul {
+      padding-left: 1.5rem;
+    }
+    li {
+      margin-bottom: 0.5rem;
+    }
+    strong {
+      color: #f8fafc;
+    }
+    a {
+      color: var(--primary);
+      text-decoration: none;
+    }
+    a:hover {
+      text-decoration: underline;
+    }
+    .footer {
+      margin-top: 2.5rem;
+      padding-top: 1.5rem;
+      border-top: 1px solid var(--border);
+      font-size: 0.875rem;
+      color: var(--text-muted);
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Privacy Policy for Life Utils</h1>
+    <div class="subtitle">Effective Date: October 28, 2026 &bull; Version 1.0</div>
+
+    <h2>1. Overview</h2>
+    <p>
+      <strong>Life Utils</strong> is committed to respecting and protecting your privacy. Our core philosophy is <strong>offline-first</strong>: you have full control over your personal routine, academic attendance, expense records, backlog tasks, and notes.
+    </p>
+
+    <h2>2. Information Collection and Storage</h2>
+    <p><strong>A. Local Device Storage (Default Mode)</strong></p>
+    <p>
+      By default, all personal data you enter into Life Utils (including daily attendance logs, transaction and budget entries, tasks, and notes) is stored solely on your device using local storage technologies (LocalStorage / AsyncStorage). This data is never transmitted to external servers without your explicit initiation.
+    </p>
+
+    <p><strong>B. Optional Cloud Accounts and Sync</strong></p>
+    <p>
+      If you choose to create an account or sign in to sync your data across devices:
+    </p>
+    <ul>
+      <li><strong>Authentication Information:</strong> Your email address and an encrypted password hash are processed securely through our backend provider (Supabase).</li>
+      <li><strong>Data Encryption:</strong> All communications between your device and the cloud are secured with industry-standard TLS/SSL encryption.</li>
+      <li><strong>Row-Level Security:</strong> Your private synced records are guarded by strict Row Level Security (RLS) rules, ensuring only your authenticated account can read or modify your data.</li>
+    </ul>
+
+    <p><strong>C. Community Forum & Feedback</strong></p>
+    <p>
+      If you choose to post suggestions or feedback to the public community forum, the title, category, and message content will be visible to other users. To protect your personal privacy, your email address is never made public on the forum.
+    </p>
+
+    <h2>3. Permissions Used by the Mobile App</h2>
+    <ul>
+      <li><strong>INTERNET:</strong> Required to fetch community forum posts and enable optional cloud synchronization.</li>
+      <li><strong>ACCESS_NETWORK_STATE:</strong> Used to detect whether your device is currently offline or online to seamlessly handle local caching and offline operations.</li>
+      <li><strong>Notifications:</strong> Used strictly for local in-app alerts (e.g. low attendance warnings, overdue tasks, or daily expense limits). You can enable or disable notifications at any time.</li>
+    </ul>
+
+    <h2>4. Advertising and Tracking</h2>
+    <p>
+      Life Utils does <strong>not</strong> contain third-party advertisements, tracking pixels, or data-broker analytics SDKs. We do not sell, rent, or trade your personal information to third parties.
+    </p>
+
+    <h2>5. Data Retention and Deletion</h2>
+    <p>
+      You are in complete control of your data:
+    </p>
+    <ul>
+      <li>You can clear all locally stored data instantly from within the application by navigating to <strong>Settings &rarr; Reset Data</strong>.</li>
+      <li>If you have created a cloud account and wish to delete your account and associated cloud records, you may request complete deletion by contacting us.</li>
+    </ul>
+
+    <h2>6. Children's Privacy</h2>
+    <p>
+      Life Utils does not knowingly collect or solicit personal information from children under the age of 13. If you believe a child under 13 has provided us with personal information, please contact us to have the information removed.
+    </p>
+
+    <h2>7. Changes to This Privacy Policy</h2>
+    <p>
+      We may update our Privacy Policy from time to time. Any changes will be posted on this page with an updated effective date.
+    </p>
+
+    <h2>8. Contact Us</h2>
+    <p>
+      If you have questions or suggestions about this Privacy Policy or data privacy in Life Utils, please reach out via GitHub or the in-app Feedback section.
+    </p>
+
+    <div class="footer">
+      &copy; 2026 Life Utils. All rights reserved.
+    </div>
+  </div>
+</body>
+</html>

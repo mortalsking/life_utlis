@@ -18,6 +18,8 @@ self.addEventListener("activate", (e) => {
 self.addEventListener("fetch", (e) => {
   const req = e.request;
   if (req.method !== "GET") return;
+  // Do not cache large binary APK downloads
+  if (req.url.endsWith(".apk")) return;
 
   if (req.mode === "navigate") {
     e.respondWith(

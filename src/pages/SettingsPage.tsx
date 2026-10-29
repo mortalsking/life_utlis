@@ -3,6 +3,7 @@ import Icon from "../components/Icon";
 import { useStore } from "../store";
 import { ACCENT_OPTIONS, type AccentColor, type ThemeMode } from "../types";
 import { todayISO } from "../utils";
+import { toast } from "../notifications";
 
 interface SettingsPageProps {
   onNavigateTab?: (tab: "today" | "attend" | "money" | "tasks" | "notes" | "stats" | "forum") => void;
@@ -11,6 +12,13 @@ interface SettingsPageProps {
 }
 
 export default function SettingsPage({ onNavigateTab, onClose, onOpenTerms }: SettingsPageProps) {
+  const isNativeApp =
+    typeof window !== "undefined" &&
+    Boolean(
+      (window as unknown as { isReactNativeApp?: boolean }).isReactNativeApp ||
+      (window as unknown as { ReactNativeWebView?: unknown }).ReactNativeWebView
+    );
+
   const {
     data,
     settings,
@@ -88,6 +96,7 @@ export default function SettingsPage({ onNavigateTab, onClose, onOpenTerms }: Se
     a.download = `lifeutils-backup-${todayISO()}.json`;
     a.click();
     URL.revokeObjectURL(url);
+    toast.success("✓ Backup exported successfully");
   };
 
   const handleImport = (file: File) => {
@@ -98,9 +107,10 @@ export default function SettingsPage({ onNavigateTab, onClose, onOpenTerms }: Se
         if (!parsed || typeof parsed !== "object") throw new Error("bad file");
         replaceAll(parsed);
         playHaptic("success");
-        alert("Backup restored successfully!");
+        toast.success("✓ Backup restored successfully!");
       } catch {
-        alert("Invalid file format. Please upload a valid Life Utils JSON backup.");
+        playHaptic("delete");
+        toast.error("Invalid file format. Please upload a valid Life Utils backup.");
       }
     };
     reader.readAsText(file);
@@ -329,49 +339,7 @@ export default function SettingsPage({ onNavigateTab, onClose, onOpenTerms }: Se
         </div>
       </div>
 
-      {/* SECTION 1: App Style Chooser */}
-      <div className="clean-settings-card">
-        <div className="clean-card-heading">
-          <div className="clean-heading-left">
-            <span className="clean-badge-icon blue">
-              <Icon name="smartphone" size={16} />
-            </span>
-            <div>
-              <span className="clean-heading-title">App Style & Layout</span>
-              <span className="clean-heading-desc">Select visual density and navigation feel</span>
-            </div>
-          </div>
-        </div>
-
-        <div className="clean-style-grid">
-          {(
-            [
-              { id: "Classic", icon: "🏛️", desc: "Balanced 7-tab dock layout with high information density" },
-              { id: "Modern", icon: "✨", desc: "Rounded glass cards, subtle glows and dynamic micro-animations" },
-              { id: "Minimal", icon: "⚡", desc: "High contrast, distraction-free typography and clean lines" },
-            ] as const
-          ).map((st) => {
-            const isSelected = (settings.appStyle || "Classic") === st.id;
-            return (
-              <button
-                key={st.id}
-                type="button"
-                className={`clean-style-card ${isSelected ? "selected" : ""}`}
-                onClick={() => handleAppStyleChange(st.id)}
-              >
-                <div className="style-card-header">
-                  <span className="style-icon">{st.icon}</span>
-                  <span className="style-name">{st.id}</span>
-                  {isSelected && <span className="style-check"><Icon name="check" size={12} /></span>}
-                </div>
-                <p className="style-desc">{st.desc}</p>
-              </button>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* SECTION 2: Grouped Settings Accordion */}
+      {/* Unified Settings Accordion */}
       <div className="clean-settings-card grouped">
         {/* Accordion 1: Appearance */}
         <div className="clean-grouped-item">
@@ -386,7 +354,7 @@ export default function SettingsPage({ onNavigateTab, onClose, onOpenTerms }: Se
               </span>
               <div className="clean-row-texts">
                 <span className="clean-row-title">Appearance & Themes</span>
-                <span className="clean-row-subtitle">Theme mode, accent palettes and animations</span>
+                <span className="clean-row-subtitle">Theme mode, accent palettes, style and animations</span>
               </div>
             </div>
             <div className="clean-row-right">
@@ -446,6 +414,36 @@ export default function SettingsPage({ onNavigateTab, onClose, onOpenTerms }: Se
                         title={acc.label}
                       >
                         {isSelected && <Icon name="check" size={12} />}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                <label className="subpanel-label" style={{ marginTop: "16px" }}>
+                  App Layout Style
+                </label>
+                <div className="clean-style-grid">
+                  {(
+                    [
+                      { id: "Classic", icon: "🏛️", desc: "Balanced 7-tab dock layout" },
+                      { id: "Modern", icon: "✨", desc: "Rounded glass cards & subtle glow" },
+                      { id: "Minimal", icon: "⚡", desc: "Distraction-free typography" },
+                    ] as const
+                  ).map((st) => {
+                    const isSelected = (settings.appStyle || "Classic") === st.id;
+                    return (
+                      <button
+                        key={st.id}
+                        type="button"
+                        className={`clean-style-card ${isSelected ? "selected" : ""}`}
+                        onClick={() => handleAppStyleChange(st.id)}
+                      >
+                        <div className="style-card-header">
+                          <span className="style-icon">{st.icon}</span>
+                          <span className="style-name">{st.id}</span>
+                          {isSelected && <span className="style-check"><Icon name="check" size={12} /></span>}
+                        </div>
+                        <p className="style-desc">{st.desc}</p>
                       </button>
                     );
                   })}
@@ -782,10 +780,12 @@ export default function SettingsPage({ onNavigateTab, onClose, onOpenTerms }: Se
                     <Icon name="info" size={15} />
                     <span>Terms of Service & Privacy Policy</span>
                   </button>
-                  <a href="/life-utils.apk" download="life-utils.apk" className="clean-apk-download-btn">
-                    <Icon name="smartphone" size={15} />
-                    <span>Download Native Android App (.apk)</span>
-                  </a>
+                  {!isNativeApp && (
+                    <a href="/life-utils.apk" download="life-utils.apk" className="clean-apk-download-btn">
+                      <Icon name="download" size={15} />
+                      <span>Download Android APK (v1.2.1)</span>
+                    </a>
+                  )}
                   <a
                     href="https://github.com/mortalsking/life_utlis"
                     target="_blank"

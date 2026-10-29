@@ -8,6 +8,7 @@ import {
   DEFAULT_SETTINGS,
   loadData,
   saveData,
+  sanitizeAndValidateAppData,
   uid,
   type AppData,
   type AttStatus,
@@ -152,7 +153,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         (u.user_metadata?.display_name as string);
 
       if (cloudRes && cloudRes.data) {
-        const cloudData = cloudRes.data as AppData;
+        const cloudData = sanitizeAndValidateAppData(cloudRes.data);
         const cloudEmpty =
           cloudData.txs.length === 0 &&
           cloudData.attendance.length === 0 &&
@@ -392,7 +393,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       }),
     delLink: (id) =>
       setData((d) => ({ ...d, links: d.links.filter((l) => l.id !== id) })),
-    replaceAll: (nd) => setData({ ...defaultData(), ...nd }),
+    replaceAll: (nd) => setData(sanitizeAndValidateAppData(nd)),
   };
 
   return <StoreContext.Provider value={store}>{children}</StoreContext.Provider>;

@@ -1,4 +1,4 @@
-import { useState, useEffect, lazy, Suspense } from "react";
+import { useState, useEffect, useRef, lazy, Suspense } from "react";
 import Icon, { type IconName } from "./components/Icon";
 import { useStore } from "./store";
 import Today from "./pages/Today";
@@ -15,6 +15,14 @@ const SettingsPage = lazy(() => import("./pages/SettingsPage"));
 const Auth = lazy(() => import("./pages/Auth"));
 const SettingsModal = lazy(() => import("./components/SettingsModal"));
 const TermsModal = lazy(() => import("./components/TermsModal"));
+const NotificationModal = lazy(() => import("./components/NotificationModal"));
+import ToastContainer from "./components/ToastContainer";
+import {
+  computeNotifications,
+  getDismissedIds,
+  isNotificationSupported,
+  sendLocalNotification,
+} from "./notifications";
 
 type Tab = "today" | "attend" | "money" | "tasks" | "notes" | "stats" | "forum" | "settings";
 
@@ -29,13 +37,22 @@ const TABS: { id: Tab; icon: IconName; label: string }[] = [
 ];
 
 export default function App() {
+  const isNativeApp =
+    typeof window !== "undefined" &&
+    Boolean(
+      (window as unknown as { isReactNativeApp?: boolean }).isReactNativeApp ||
+      (window as unknown as { ReactNativeWebView?: unknown }).ReactNativeWebView
+    );
+
   const [tab, setTab] = useState<Tab>("today");
   const {
+    data,
     theme,
     setTheme,
     settings,
     session,
     user,
+    isGuest,
     signOut,
     showAuthModal,
     setShowAuthModal,
@@ -43,24 +60,46 @@ export default function App() {
     setShowSettingsModal,
     playHaptic,
   } = useStore();
+  const [showNotifModal, setShowNotifModal] = useState(false);
   const [bannerDismissed, setBannerDismissed] = useState(() => {
     return sessionStorage.getItem("lifeutils-guest-banner-dismissed") === "1";
   });
   const [showTermsModal, setShowTermsModal] = useState(false);
 
+  // Active undismissed notifications
+  const activeNotifs = (data ? computeNotifications(data, isGuest) : []).filter(
+    (n) => !getDismissedIds().has(n.id),
+  );
+
+  // Push urgent alert on initial launch if granted
+  const hasNotifiedRef = useRef(false);
+  useEffect(() => {
+    if (hasNotifiedRef.current) return;
+    if (isNotificationSupported() && Notification.permission === "granted") {
+      const urgent = activeNotifs.filter((n) => n.level === "danger");
+      if (urgent.length > 0) {
+        hasNotifiedRef.current = true;
+        sendLocalNotification(urgent[0].title, { body: urgent[0].message });
+      }
+    }
+  }, [activeNotifs]);
+
   // Listen for native shell postMessages (e.g. from React Native Expo shell)
   useEffect(() => {
     const handleNativeMessage = (e: MessageEvent) => {
       try {
-        const data = typeof e.data === "string" ? JSON.parse(e.data) : e.data;
-        if (data?.type === "OPEN_SETTINGS") {
+        const d = typeof e.data === "string" ? JSON.parse(e.data) : e.data;
+        if (d?.type === "OPEN_SETTINGS") {
           setShowSettingsModal(true);
-        } else if (data?.type === "SET_THEME" && (data.theme === "light" || data.theme === "dark")) {
-          setTheme(data.theme);
-        } else if (data?.type === "NAVIGATE_TAB" && data.tab) {
-          setTab(data.tab);
+        } else if (d?.type === "OPEN_NOTIFICATIONS") {
+          setShowNotifModal(true);
+        } else if (d?.type === "SET_THEME" && (d.theme === "light" || d.theme === "dark")) {
+          setTheme(d.theme);
+        } else if (d?.type === "NAVIGATE_TAB" && d.tab) {
+          setTab(d.tab);
           setShowSettingsModal(false);
-        } else if (data?.type === "OPEN_TERMS") {
+          setShowNotifModal(false);
+        } else if (d?.type === "OPEN_TERMS") {
           setShowTermsModal(true);
         }
       } catch {
@@ -87,17 +126,18 @@ export default function App() {
           </div>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: "0.45rem" }}>
-          {/* Direct APK Download Button */}
-          <a
-            href="/life-utils.apk"
-            download="life-utils.apk"
-            className="btn-download-app"
-            title="Download Life Utils Android APK"
-          >
-            <Icon name="smartphone" size={15} />
-            <span className="btn-download-label">Get App</span>
-            <span className="btn-download-pill">APK</span>
-          </a>
+          {!isNativeApp && (
+            <a
+              href="/life-utils.apk"
+              download="life-utils.apk"
+              className="btn-download-app"
+              title="Download Life Utils Android APK (v1.2.1 Latest Release)"
+            >
+              <Icon name="smartphone" size={15} />
+              <span className="btn-download-label">Get App</span>
+              <span className="btn-download-pill">APK</span>
+            </a>
+          )}
 
           {!session ? (
             <button
@@ -150,6 +190,21 @@ export default function App() {
               </button>
             </div>
           )}
+          <button
+            className={`icon-btn topbar-bell-btn ${showNotifModal ? "active" : ""}`}
+            onClick={() => {
+              playHaptic("click");
+              setShowNotifModal(true);
+            }}
+            title="Notifications & Alerts"
+            id="notifications-btn"
+            style={{ position: "relative" }}
+          >
+            <Icon name="bell" size={18} />
+            {activeNotifs.length > 0 && (
+              <span className="topbar-notif-pill">{activeNotifs.length}</span>
+            )}
+          </button>
           <button
             className="icon-btn"
             onClick={() => {
@@ -286,6 +341,24 @@ export default function App() {
           </div>
         </div>
       )}
+
+      {showNotifModal && (
+        <div className="modal-backdrop" onClick={() => setShowNotifModal(false)}>
+          <div className="modal-container" onClick={(e) => e.stopPropagation()}>
+            <Suspense fallback={<div style={{ padding: "2rem", textAlign: "center", color: "var(--muted)" }}>Loading notifications...</div>}>
+              <NotificationModal
+                onClose={() => setShowNotifModal(false)}
+                onNavigateTab={(t) => {
+                  setTab(t);
+                  setShowNotifModal(false);
+                }}
+              />
+            </Suspense>
+          </div>
+        </div>
+      )}
+
+      <ToastContainer />
     </div>
   );
 }

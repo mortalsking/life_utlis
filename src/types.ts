@@ -127,6 +127,95 @@ export function defaultData(): AppData {
   };
 }
 
+export function sanitizeAndValidateAppData(raw: unknown): AppData {
+  const base = defaultData();
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) {
+    return base;
+  }
+  const obj = raw as Record<string, unknown>;
+  const txs = Array.isArray(obj.txs)
+    ? (obj.txs as unknown[]).filter(
+        (t): t is Tx =>
+          Boolean(t) &&
+          typeof t === "object" &&
+          typeof (t as Record<string, unknown>).id === "string" &&
+          typeof (t as Record<string, unknown>).amount === "number",
+      )
+    : [];
+  const attendance = Array.isArray(obj.attendance)
+    ? (obj.attendance as unknown[]).filter(
+        (a): a is AttEntry =>
+          Boolean(a) &&
+          typeof a === "object" &&
+          typeof (a as Record<string, unknown>).id === "string" &&
+          typeof (a as Record<string, unknown>).subject === "string",
+      )
+    : [];
+  const tasks = Array.isArray(obj.tasks)
+    ? (obj.tasks as unknown[]).filter(
+        (t): t is Task =>
+          Boolean(t) &&
+          typeof t === "object" &&
+          typeof (t as Record<string, unknown>).id === "string" &&
+          typeof (t as Record<string, unknown>).text === "string",
+      )
+    : [];
+  const journal = Array.isArray(obj.journal)
+    ? (obj.journal as unknown[]).filter(
+        (j): j is JournalEntry =>
+          Boolean(j) &&
+          typeof j === "object" &&
+          typeof (j as Record<string, unknown>).id === "string",
+      )
+    : [];
+  const links = Array.isArray(obj.links)
+    ? (obj.links as unknown[]).filter(
+        (l): l is LinkItem =>
+          Boolean(l) &&
+          typeof l === "object" &&
+          typeof (l as Record<string, unknown>).id === "string" &&
+          typeof (l as Record<string, unknown>).url === "string",
+      )
+    : [];
+  const subjects = Array.isArray(obj.subjects)
+    ? (obj.subjects as unknown[])
+        .filter((s): s is string => typeof s === "string" && s.trim().length > 0)
+    : ["Class"];
+
+  const settingsObj =
+    obj.settings && typeof obj.settings === "object" && !Array.isArray(obj.settings)
+      ? (obj.settings as Partial<UserSettings>)
+      : {};
+
+  return {
+    version: 2,
+    txs,
+    attendance,
+    tasks,
+    journal,
+    links,
+    subjects: subjects.length > 0 ? subjects : ["Class"],
+    settings: {
+      ...DEFAULT_SETTINGS,
+      ...settingsObj,
+      userName:
+        typeof settingsObj.userName === "string" && settingsObj.userName.trim()
+          ? settingsObj.userName.trim().slice(0, 50)
+          : DEFAULT_SETTINGS.userName,
+      targetAttendancePct:
+        typeof settingsObj.targetAttendancePct === "number" &&
+        settingsObj.targetAttendancePct > 0 &&
+        settingsObj.targetAttendancePct <= 100
+          ? settingsObj.targetAttendancePct
+          : 75,
+      currencySymbol:
+        typeof settingsObj.currencySymbol === "string" && settingsObj.currencySymbol.trim()
+          ? settingsObj.currencySymbol.trim().slice(0, 5)
+          : "₹",
+    },
+  };
+}
+
 export function loadData(): AppData {
   try {
     const raw = localStorage.getItem(KEY);
@@ -143,15 +232,13 @@ export function loadData(): AppData {
       };
     }
 
-    const parsed = JSON.parse(raw) as Partial<AppData>;
-    if (typeof parsed !== "object" || parsed === null) return defaultData();
-
+    const parsed = JSON.parse(raw);
+    const sanitized = sanitizeAndValidateAppData(parsed);
     return {
-      ...defaultData(),
-      ...parsed,
+      ...sanitized,
       settings: {
         ...baseSettings,
-        ...(parsed.settings || {}),
+        ...sanitized.settings,
       },
     };
   } catch {
@@ -164,5 +251,8 @@ export function saveData(d: AppData): void {
 }
 
 export function uid(): string {
-  return crypto.randomUUID();
+  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+    return crypto.randomUUID();
+  }
+  return "id-" + Date.now().toString(36) + "-" + Math.random().toString(36).substring(2, 9);
 }

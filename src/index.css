@@ -3916,6 +3916,522 @@ html[data-animations="false"] * {
   background: color-mix(in srgb, var(--card) 60%, var(--bg));
 }
 
+/* ==========================================================================
+   NOTIFICATION SYSTEM & TOAST STYLES
+   ========================================================================== */
+
+/* Topbar Bell Badge */
+.topbar-bell-btn {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.topbar-bell-btn:hover {
+  transform: translateY(-1px);
+}
+
+.topbar-notif-pill {
+  position: absolute;
+  top: -3px;
+  right: -3px;
+  min-width: 17px;
+  height: 17px;
+  padding: 0 4px;
+  border-radius: 9px;
+  background: linear-gradient(135deg, #f43f5e, #e11d48);
+  color: #ffffff;
+  font-size: 0.65rem;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 0 10px rgba(244, 63, 94, 0.6);
+  animation: notifPulse 2.2s infinite;
+  pointer-events: none;
+}
+
+@keyframes notifPulse {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 0 6px rgba(244, 63, 94, 0.5);
+  }
+  50% {
+    transform: scale(1.12);
+    box-shadow: 0 0 14px rgba(244, 63, 94, 0.85);
+  }
+}
+
+/* Notification Modal */
+.clean-notif-modal-wrapper {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  max-width: 520px;
+  width: 100%;
+  max-height: 86vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(255, 255, 255, 0.05) inset;
+}
+
+.clean-notif-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px 14px;
+  border-bottom: 1px solid var(--border);
+  background: color-mix(in srgb, var(--card) 85%, var(--bg));
+}
+
+.clean-notif-header-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.clean-notif-bell-icon {
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  display: grid;
+  place-items: center;
+  position: relative;
+}
+
+.clean-notif-count-badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  min-width: 16px;
+  height: 16px;
+  border-radius: 8px;
+  background: #f43f5e;
+  color: #fff;
+  font-size: 0.62rem;
+  font-weight: 800;
+  display: grid;
+  place-items: center;
+}
+
+.clean-notif-title {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--text);
+  line-height: 1.2;
+}
+
+.clean-notif-subtitle {
+  margin: 2px 0 0;
+  font-size: 0.76rem;
+  color: var(--muted);
+}
+
+.clean-notif-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.clean-notif-clear-btn {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--muted);
+  font-size: 0.74rem;
+  padding: 5px 9px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.clean-notif-clear-btn:hover {
+  color: var(--text);
+  border-color: var(--border-strong);
+  background: var(--accent-soft);
+}
+
+/* Push Notification Banner */
+.clean-push-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 11px 18px;
+  background: color-mix(in srgb, var(--accent) 8%, transparent);
+  border-bottom: 1px solid var(--border);
+}
+
+.clean-push-banner-content {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.clean-push-icon {
+  font-size: 1.2rem;
+}
+
+.clean-push-text strong {
+  display: block;
+  font-size: 0.82rem;
+  color: var(--text);
+}
+
+.clean-push-text p {
+  margin: 1px 0 0;
+  font-size: 0.73rem;
+  color: var(--muted);
+  line-height: 1.3;
+}
+
+.clean-push-granted-pill {
+  font-size: 0.72rem;
+  padding: 4px 8px;
+  border-radius: 6px;
+  background: rgba(16, 185, 129, 0.15);
+  color: var(--good);
+  font-weight: 600;
+}
+
+.clean-push-denied-pill {
+  font-size: 0.72rem;
+  padding: 4px 8px;
+  border-radius: 6px;
+  background: rgba(244, 63, 94, 0.15);
+  color: var(--bad);
+  font-weight: 600;
+}
+
+.clean-notif-blocked-guide {
+  margin: 10px 18px 0;
+  padding: 12px 14px;
+  background: rgba(244, 63, 94, 0.08);
+  border: 1px solid rgba(244, 63, 94, 0.2);
+  border-radius: 12px;
+  font-size: 0.82rem;
+}
+
+.clean-notif-blocked-guide .guide-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  color: var(--bad);
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+
+.clean-notif-blocked-guide .guide-steps {
+  margin: 6px 0 10px 18px;
+  padding: 0;
+  line-height: 1.5;
+  color: var(--text);
+}
+
+.clean-notif-blocked-guide .guide-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.clean-push-enable-btn {
+  white-space: nowrap;
+  font-size: 0.75rem;
+  padding: 6px 10px;
+}
+
+/* Tabs */
+.clean-notif-tabs {
+  display: flex;
+  gap: 6px;
+  padding: 10px 18px;
+  border-bottom: 1px solid var(--border);
+  background: var(--card);
+}
+
+.clean-notif-tab {
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 600;
+  padding: 6px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.clean-notif-tab:hover {
+  color: var(--text);
+  background: var(--accent-soft);
+}
+
+.clean-notif-tab.active {
+  background: var(--accent-soft);
+  color: var(--accent);
+  border-color: color-mix(in srgb, var(--accent) 30%, transparent);
+}
+
+/* Notification List */
+.clean-notif-list {
+  padding: 14px 18px 20px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  flex: 1;
+}
+
+.clean-notif-card {
+  padding: 13px 15px;
+  border-radius: 14px;
+  background: var(--card-2);
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--accent);
+  transition: all 0.18s ease;
+}
+
+.clean-notif-card.level-danger {
+  border-left-color: var(--bad);
+  background: color-mix(in srgb, var(--bad) 4%, var(--card-2));
+}
+
+.clean-notif-card.level-warning {
+  border-left-color: var(--warn);
+  background: color-mix(in srgb, var(--warn) 4%, var(--card-2));
+}
+
+.clean-notif-card.level-success {
+  border-left-color: var(--good);
+  background: color-mix(in srgb, var(--good) 4%, var(--card-2));
+}
+
+.clean-notif-card.level-info {
+  border-left-color: var(--accent);
+}
+
+.clean-notif-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+
+.clean-notif-card-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 7px;
+  border-radius: 6px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.clean-notif-dismiss-btn {
+  background: transparent;
+  border: none;
+  color: var(--muted);
+  cursor: pointer;
+  padding: 2px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.15s ease;
+}
+
+.clean-notif-dismiss-btn:hover {
+  color: var(--text);
+}
+
+.clean-notif-card-title {
+  margin: 0 0 4px;
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.clean-notif-card-msg {
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--muted);
+  line-height: 1.4;
+}
+
+.clean-notif-card-footer {
+  margin-top: 10px;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.clean-notif-action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  border: 1px solid color-mix(in srgb, var(--accent) 30%, transparent);
+  font-size: 0.76rem;
+  font-weight: 600;
+  padding: 5px 11px;
+  border-radius: 7px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.clean-notif-action-btn:hover {
+  background: var(--accent);
+  color: #fff;
+  transform: translateX(2px);
+}
+
+.clean-notif-empty {
+  padding: 36px 16px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.clean-notif-empty-icon {
+  font-size: 2.4rem;
+  margin-bottom: 4px;
+}
+
+.clean-notif-empty h3 {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.clean-notif-empty p {
+  margin: 0;
+  font-size: 0.82rem;
+  color: var(--muted);
+  max-width: 320px;
+  line-height: 1.45;
+}
+
+.clean-notif-restore-btn {
+  margin-top: 12px;
+}
+
+/* ==========================================================================
+   TOAST SYSTEM STYLES
+   ========================================================================== */
+
+.clean-toast-container {
+  position: fixed;
+  bottom: 84px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 99999;
+  display: flex;
+  flex-direction: column-reverse;
+  gap: 8px;
+  pointer-events: none;
+  width: calc(100% - 32px);
+  max-width: 440px;
+}
+
+.clean-toast-pill {
+  pointer-events: auto;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--card) 92%, transparent);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--border-strong);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.08) inset;
+  animation: toastSlideUp 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+  color: var(--text);
+}
+
+@keyframes toastSlideUp {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.clean-toast-pill.type-success {
+  border-color: rgba(52, 211, 153, 0.4);
+}
+.clean-toast-pill.type-success .clean-toast-icon {
+  background: rgba(52, 211, 153, 0.18);
+  color: var(--good);
+}
+
+.clean-toast-pill.type-error {
+  border-color: rgba(248, 113, 113, 0.4);
+}
+.clean-toast-pill.type-error .clean-toast-icon {
+  background: rgba(248, 113, 113, 0.18);
+  color: var(--bad);
+}
+
+.clean-toast-pill.type-info {
+  border-color: rgba(56, 189, 248, 0.4);
+}
+.clean-toast-pill.type-info .clean-toast-icon {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.clean-toast-icon {
+  width: 22px;
+  height: 22px;
+  border-radius: 7px;
+  display: grid;
+  place-items: center;
+  font-size: 0.74rem;
+  font-weight: 900;
+  flex-shrink: 0;
+}
+
+.clean-toast-msg {
+  flex: 1;
+  font-size: 0.82rem;
+  font-weight: 500;
+  line-height: 1.35;
+}
+
+.clean-toast-close {
+  background: transparent;
+  border: none;
+  color: var(--muted);
+  cursor: pointer;
+  padding: 3px;
+  border-radius: 5px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.15s ease;
+  flex-shrink: 0;
+}
+
+.clean-toast-close:hover {
+  color: var(--text);
+}
+
+
 
 
 

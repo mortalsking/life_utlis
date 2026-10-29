@@ -3,9 +3,10 @@ import TxForm from "../components/TxForm";
 import Icon from "../components/Icon";
 import { useStore } from "../store";
 import { calcAttStats, fmtDate, fmtMoney, greeting, todayISO } from "../utils";
+import { toast } from "../notifications";
 
 export default function Today() {
-  const { data, markAttendance, delAtt, clearAttendance, addTask, saveJournal } = useStore();
+  const { data, markAttendance, delAtt, clearAttendance, addTask, saveJournal, playHaptic } = useStore();
   const today = todayISO();
   const [taskText, setTaskText] = useState("");
   const [journalText, setJournalText] = useState("");
@@ -44,7 +45,11 @@ export default function Today() {
             <button
               className="btn ghost neg"
               style={{ fontSize: "0.8rem", padding: "0.2rem 0.5rem" }}
-              onClick={() => clearAttendance(today)}
+              onClick={() => {
+                playHaptic("delete");
+                clearAttendance(today);
+                toast.info("Cleared today's lectures");
+              }}
               title="Clear all today's lectures"
             >
               Clear today
@@ -74,14 +79,22 @@ export default function Today() {
                   <div style={{ display: "flex", gap: "0.4rem" }}>
                     <button
                       className="btn primary small"
-                      onClick={() => markAttendance(today, s, "present")}
+                      onClick={() => {
+                        playHaptic("success");
+                        markAttendance(today, s, "present");
+                        toast.success(`✓ Marked Present for ${s}`);
+                      }}
                       title={`Log 1 Present lecture for ${s}`}
                     >
                       + Present
                     </button>
                     <button
                       className="btn neg small"
-                      onClick={() => markAttendance(today, s, "absent")}
+                      onClick={() => {
+                        playHaptic("click");
+                        markAttendance(today, s, "absent");
+                        toast.info(`Marked Absent for ${s}`);
+                      }}
                       title={`Log 1 Absent lecture for ${s}`}
                     >
                       + Absent
@@ -109,7 +122,11 @@ export default function Today() {
                     className="icon-btn"
                     style={{ padding: 0, height: "auto", minWidth: "auto", border: "none", color: "inherit" }}
                     title="Delete lecture entry"
-                    onClick={() => delAtt(a.id)}
+                    onClick={() => {
+                      playHaptic("delete");
+                      delAtt(a.id);
+                      toast.info(`Removed ${a.subject} #${idx + 1}`);
+                    }}
                   >
                     <Icon name="x" size={12} />
                   </button>
@@ -149,7 +166,10 @@ export default function Today() {
           className="inline-form"
           onSubmit={(e) => {
             e.preventDefault();
+            if (!taskText.trim()) return;
             addTask(taskText);
+            playHaptic("success");
+            toast.success("✓ Task added to backlog");
             setTaskText("");
           }}
         >
@@ -186,7 +206,9 @@ export default function Today() {
               className="btn primary full"
               disabled={!journalText.trim()}
               onClick={() => {
+                playHaptic("success");
                 saveJournal({ date: today, text: journalText });
+                toast.success("✓ Daily journal saved");
                 setJournalText("");
               }}
             >

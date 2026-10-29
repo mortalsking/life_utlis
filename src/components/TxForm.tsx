@@ -1,10 +1,11 @@
 import { useState } from "react";
 import { useStore } from "../store";
 import { CATEGORIES } from "../types";
-import { todayISO } from "../utils";
+import { fmtMoney, todayISO } from "../utils";
+import { toast } from "../notifications";
 
 export default function TxForm({ onSaved }: { onSaved?: () => void }) {
-  const { addTx } = useStore();
+  const { addTx, playHaptic } = useStore();
   const [kind, setKind] = useState<"expense" | "saved">("expense");
   const [date, setDate] = useState(todayISO());
   const [amount, setAmount] = useState("");
@@ -22,6 +23,12 @@ export default function TxForm({ onSaved }: { onSaved?: () => void }) {
       amount: amt,
       note: note.trim() || undefined,
     });
+    playHaptic("success");
+    toast.success(
+      kind === "expense"
+        ? `✓ ${fmtMoney(amt)} logged under ${category}`
+        : `✓ ${fmtMoney(amt)} added to savings!`,
+    );
     setAmount("");
     setNote("");
     onSaved?.();

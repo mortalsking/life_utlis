@@ -10,6 +10,8 @@ import {
   startOfWeekISO,
   inRange,
 } from "./utils";
+import { defaultData, sanitizeAndValidateAppData } from "./types";
+import { computeNotifications } from "./notifications";
 
 describe("Math & Percentage Utilities", () => {
   it("calculates percentage correctly and rounds to whole number", () => {
@@ -150,5 +152,97 @@ describe("ISO Date Utilities", () => {
     expect(inRange("2026-10-15", range)).toBe(true);
     expect(inRange("2026-10-01", range)).toBe(true);
     expect(inRange("2026-11-01", range)).toBe(false);
+  });
+});
+
+describe("Data Sanitization & Resilience (sanitizeAndValidateAppData)", () => {
+  it("recovers safely from invalid or corrupted raw input", () => {
+    const invalid = {
+      txs: "not-an-array",
+      attendance: null,
+      tasks: {},
+      journal: 123,
+      links: "links",
+      subjects: [],
+      settings: {
+        targetAttendancePct: 150, // invalid > 100
+        currencySymbol: "$$$$$$$$$$$$$$$$$$$$$$",
+      },
+    };
+
+    const clean = sanitizeAndValidateAppData(invalid);
+    expect(Array.isArray(clean.txs)).toBe(true);
+    expect(clean.txs).toHaveLength(0);
+    expect(Array.isArray(clean.attendance)).toBe(true);
+    expect(Array.isArray(clean.tasks)).toBe(true);
+    expect(clean.subjects).toEqual(["Class"]);
+    expect(clean.settings.targetAttendancePct).toBe(75);
+    expect(clean.settings.currencySymbol.length).toBeLessThanOrEqual(5);
+  });
+
+  it("preserves valid data structures intact", () => {
+    const valid = {
+      version: 2,
+      txs: [{ id: "tx-1", date: "2026-10-28", kind: "expense" as const, category: "Food", amount: 150 }],
+      attendance: [{ id: "att-1", date: "2026-10-28", subject: "Math", status: "present" as const }],
+      tasks: [{ id: "task-1", text: "Study", created: "2026-10-28", done: false }],
+      journal: [],
+      links: [],
+      subjects: ["Math", "Physics"],
+      settings: {
+        userName: "Alex",
+        targetAttendancePct: 80,
+        currencySymbol: "₹",
+      },
+    };
+
+    const clean = sanitizeAndValidateAppData(valid);
+    expect(clean.txs).toHaveLength(1);
+    expect(clean.attendance).toHaveLength(1);
+    expect(clean.tasks).toHaveLength(1);
+    expect(clean.subjects).toEqual(["Math", "Physics"]);
+    expect(clean.settings.userName).toBe("Alex");
+    expect(clean.settings.targetAttendancePct).toBe(80);
+  });
+});
+
+describe("Notification Engine (computeNotifications)", () => {
+  it("generates critical attendance notification when below target", () => {
+    const data = defaultData();
+    data.settings.targetAttendancePct = 75;
+    data.attendance = [
+      { id: "1", date: "2026-10-28", subject: "Math", status: "absent" },
+      { id: "2", date: "2026-10-28", subject: "Math", status: "absent" },
+      { id: "3", date: "2026-10-28", subject: "Math", status: "present" },
+    ]; // 33%
+
+    const notifs = computeNotifications(data, false);
+    const attNotif = notifs.find((n) => n.id === "attendance-below-target");
+    expect(attNotif).toBeDefined();
+    expect(attNotif?.level).toBe("danger");
+    expect(attNotif?.message).toContain("33%");
+  });
+
+  it("generates overdue tasks notification for past due dates", () => {
+    const data = defaultData();
+    data.tasks = [
+      { id: "1", text: "Submit assignment", created: "2026-10-20", due: "2026-10-21", done: false },
+      { id: "2", text: "Buy books", created: "2026-10-20", done: false },
+    ];
+
+    const notifs = computeNotifications(data, false);
+    const taskNotif = notifs.find((n) => n.id === "tasks-overdue-alert");
+    expect(taskNotif).toBeDefined();
+    expect(taskNotif?.level).toBe("danger");
+    expect(taskNotif?.message).toContain("Submit assignment");
+  });
+
+  it("informs user about guest mode and cloud sync status", () => {
+    const data = defaultData();
+    const guestNotifs = computeNotifications(data, true);
+    expect(guestNotifs.some((n) => n.id === "cloud-guest-backup-notice")).toBe(true);
+
+    const authNotifs = computeNotifications(data, false);
+    expect(authNotifs.some((n) => n.id === "cloud-sync-active")).toBe(true);
   });
 });

@@ -1,9 +1,10 @@
 import { useState } from "react";
 import { useStore } from "../store";
 import { fmtDate, todayISO } from "../utils";
+import { toast } from "../notifications";
 
 export default function Backlog() {
-  const { data, addTask, toggleTask, delTask, clearDoneTasks } = useStore();
+  const { data, addTask, toggleTask, delTask, clearDoneTasks, playHaptic } = useStore();
   const [text, setText] = useState("");
   const [due, setDue] = useState("");
   const today = todayISO();
@@ -34,7 +35,10 @@ export default function Backlog() {
         className="card form"
         onSubmit={(e) => {
           e.preventDefault();
+          if (!text.trim()) return;
           addTask(text, due || undefined);
+          playHaptic("success");
+          toast.success("✓ Task added to backlog");
           setText("");
           setDue("");
         }}
@@ -63,7 +67,15 @@ export default function Backlog() {
         {open.length === 0 && <p className="muted small">All clear.</p>}
         {open.map((t) => (
           <div key={t.id} className="task">
-            <button className="check" onClick={() => toggleTask(t.id)} title="Mark done">
+            <button
+              className="check"
+              onClick={() => {
+                playHaptic("click");
+                toggleTask(t.id);
+                toast.success("✓ Task marked completed");
+              }}
+              title="Mark done"
+            >
               ✓
             </button>
             <div className="task-body">
@@ -74,7 +86,15 @@ export default function Backlog() {
                 </span>
               )}
             </div>
-            <button className="icon-btn" onClick={() => delTask(t.id)} title="Delete">
+            <button
+              className="icon-btn"
+              onClick={() => {
+                playHaptic("delete");
+                delTask(t.id);
+                toast.info("Task removed");
+              }}
+              title="Delete"
+            >
               ×
             </button>
           </div>
@@ -86,16 +106,39 @@ export default function Backlog() {
           <h3>Recently done</h3>
           {done.map((t) => (
             <div key={t.id} className="task done">
-              <button className="check checked" onClick={() => toggleTask(t.id)} title="Undo">
+              <button
+                className="check checked"
+                onClick={() => {
+                  playHaptic("toggle");
+                  toggleTask(t.id);
+                  toast.info("Task reopened");
+                }}
+                title="Undo"
+              >
                 ✓
               </button>
               <div className="task-body strikethrough">{t.text}</div>
-              <button className="icon-btn" onClick={() => delTask(t.id)} title="Delete">
+              <button
+                className="icon-btn"
+                onClick={() => {
+                  playHaptic("delete");
+                  delTask(t.id);
+                  toast.info("Task removed");
+                }}
+                title="Delete"
+              >
                 ×
               </button>
             </div>
           ))}
-          <button className="btn ghost full" onClick={clearDoneTasks}>
+          <button
+            className="btn ghost full"
+            onClick={() => {
+              playHaptic("delete");
+              clearDoneTasks();
+              toast.info("Cleared completed tasks");
+            }}
+          >
             Clear done
           </button>
         </section>
