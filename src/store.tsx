@@ -78,6 +78,9 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   // Listen to messages from React Native WebView (e.g. mobile settings button triggering web modal)
   useEffect(() => {
     const handleNativeMessage = (event: MessageEvent) => {
+      if (event.origin && event.origin !== window.location.origin && !event.origin.includes('localhost')) {
+        return;
+      }
       try {
         const raw = typeof event.data === "string" ? JSON.parse(event.data) : event.data;
         if (raw?.type === "OPEN_SETTINGS") {

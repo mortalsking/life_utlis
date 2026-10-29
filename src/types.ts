@@ -174,7 +174,8 @@ export function sanitizeAndValidateAppData(raw: unknown): AppData {
           Boolean(l) &&
           typeof l === "object" &&
           typeof (l as Record<string, unknown>).id === "string" &&
-          typeof (l as Record<string, unknown>).url === "string",
+          typeof (l as Record<string, unknown>).url === "string" &&
+          /^https?:\/\//i.test(((l as Record<string, unknown>).url as string).trim()),
       )
     : [];
   const subjects = Array.isArray(obj.subjects)
@@ -212,6 +213,11 @@ export function sanitizeAndValidateAppData(raw: unknown): AppData {
         typeof settingsObj.currencySymbol === "string" && settingsObj.currencySymbol.trim()
           ? settingsObj.currencySymbol.trim().slice(0, 5)
           : "₹",
+      avatarUrl:
+        typeof settingsObj.avatarUrl === "string" &&
+        /^(\/|https?:\/\/|data:image\/)/i.test(settingsObj.avatarUrl.trim())
+          ? settingsObj.avatarUrl.trim()
+          : DEFAULT_SETTINGS.avatarUrl,
     },
   };
 }

@@ -233,9 +233,14 @@ export default function SettingsPage({ onNavigateTab, onClose, onOpenTerms }: Se
                   className="btn primary small"
                   disabled={!customAvatarUrl.trim()}
                   onClick={() => {
-                    if (customAvatarUrl.trim()) {
+                    const trimmed = customAvatarUrl.trim();
+                    if (trimmed) {
+                      if (!/^(\/|https?:\/\/|data:image\/)/i.test(trimmed)) {
+                        toast.error("Please enter a valid HTTP or HTTPS image URL.");
+                        return;
+                      }
                       playHaptic("success");
-                      updateSettings({ avatarUrl: customAvatarUrl.trim() });
+                      updateSettings({ avatarUrl: trimmed });
                       setAvatarPickerOpen(false);
                       setCustomAvatarUrl("");
                     }
