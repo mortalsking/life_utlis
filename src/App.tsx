@@ -119,7 +119,7 @@ export default function App() {
     <div className="shell">
       <header className="topbar">
         <div className="brand">
-          <img src="/logo.jpg" alt="Life Utils Logo" className="brand-logo-img" />
+          <img src="/logo.png" alt="Life Utils Logo" className="brand-logo-img" />
           <div className="brand-text">
             <h1>Life Utils</h1>
             <span>{fmtDate(todayISO())}</span>

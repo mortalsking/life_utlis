@@ -41,7 +41,8 @@ export default function SettingsPage({ onNavigateTab, onClose, onOpenTerms }: Se
   const [customAvatarUrl, setCustomAvatarUrl] = useState("");
 
   const PRESET_AVATARS = [
-    { label: "Mascot (Official)", category: "Mascot & Animals", url: "/logo.jpg" },
+    { label: "Mascot (Official)", category: "Mascot & Animals", url: "/mascot.jpg" },
+    { label: "UL Brand Icon", category: "Abstract", url: "/logo.png" },
     { label: "Alex (Student)", category: "Students", url: "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=200&auto=format&fit=crop&q=80" },
     { label: "Maya (Student)", category: "Students", url: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200&auto=format&fit=crop&q=80" },
     { label: "Arjun (Techie)", category: "Students", url: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&auto=format&fit=crop&q=80" },
@@ -771,6 +772,14 @@ export default function SettingsPage({ onNavigateTab, onClose, onOpenTerms }: Se
                 <p style={{ marginTop: "10px", fontSize: "0.86rem", color: "var(--text-subtle)", lineHeight: 1.5 }}>
                   Life Utils is an offline-first, cloud-synced personal daily utility app designed to track attendance, manage expenses, organize to-dos, record journals, and connect with fellow users.
                 </p>
+
+                <div className="clean-mascot-badge-card">
+                  <img src="/mascot.jpg" alt="Official Mascot" className="clean-mascot-badge-img" />
+                  <div className="clean-mascot-badge-info">
+                    <strong>Official Life Utils Mascot</strong>
+                    <span className="muted small-text">Your friendly companion created for Life Utils</span>
+                  </div>
+                </div>
 
                 <div style={{ marginTop: "14px", display: "flex", flexDirection: "column", gap: "8px" }}>
                   <button

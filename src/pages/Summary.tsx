@@ -100,6 +100,22 @@ export default function Summary() {
     <div className="page">
       <h2 className="page-title">Summary</h2>
 
+      <div className="mascot-companion-card">
+        <div className="mascot-avatar-wrap">
+          <img src="/mascot.jpg" alt="Life Utils Mascot" className="mascot-avatar-img" />
+          <span className="mascot-live-indicator" title="Mascot Active" />
+        </div>
+        <div className="mascot-text-wrap">
+          <div className="mascot-header-row">
+            <span className="mascot-name">Buddy Mascot</span>
+            <span className="mascot-status-pill">Companion</span>
+          </div>
+          <p className="mascot-quote">
+            "Track daily, improve steadily. You've got this, {settings.userName || "friend"}!"
+          </p>
+        </div>
+      </div>
+
       <div className="statgrid three">
         <div className="card stat">
           <span>Attendance (mo)</span>
