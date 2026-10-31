@@ -130,6 +130,8 @@ export default function App() {
             <a
               href="/life-utils.apk"
               download="life-utils.apk"
+              target="_blank"
+              rel="noopener noreferrer"
               className="btn-download-app"
               title="Download Life Utils Android APK (v1.2.1 Latest Release)"
             >

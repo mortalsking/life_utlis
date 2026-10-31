@@ -222,10 +222,15 @@ export default function Summary() {
             <a
               href="/life-utils.apk"
               download="life-utils.apk"
+              target="_blank"
+              rel="noopener noreferrer"
               className="btn primary full btn-download-card-action"
             >
               <Icon name="download" size={17} /> Download Android APK (.apk)
             </a>
+            <p className="muted small-text" style={{ fontSize: "0.75rem", textAlign: "center", margin: "2px 0 0 0" }}>
+              💡 If Chrome warns: tap <strong>Download anyway</strong> &bull; On Play Protect: tap <strong>More details &rarr; Install anyway</strong>
+            </p>
           </div>
         </section>
       )}

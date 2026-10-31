@@ -795,7 +795,13 @@ export default function SettingsPage({ onNavigateTab, onClose, onOpenTerms }: Se
                     <span>Terms of Service & Privacy Policy</span>
                   </button>
                   {!isNativeApp && (
-                    <a href="/life-utils.apk" download="life-utils.apk" className="clean-apk-download-btn">
+                    <a
+                      href="/life-utils.apk"
+                      download="life-utils.apk"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="clean-apk-download-btn"
+                    >
                       <Icon name="download" size={15} />
                       <span>Download Android APK (v1.2.1)</span>
                     </a>
