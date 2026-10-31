@@ -73,8 +73,8 @@ export interface UserSettings {
 }
 
 export const DEFAULT_SETTINGS: UserSettings = {
-  userName: "Rushi",
-  avatarUrl: "/logo.jpg",
+  userName: "Friend",
+  avatarUrl: "/logo.png",
   appStyle: "Classic",
   themeMode: "dark",
   accentColor: "violet",
@@ -111,8 +111,6 @@ export const CATEGORIES = [
 export const MOODS = ["Great", "Good", "Okay", "Meh", "Bad"] as const;
 
 export const LINK_CATEGORIES = ["Study", "College", "Tools", "Fun", "Other"] as const;
-
-const KEY = "lifeutils-data";
 
 export function defaultData(): AppData {
   return {
@@ -222,9 +220,27 @@ export function sanitizeAndValidateAppData(raw: unknown): AppData {
   };
 }
 
-export function loadData(): AppData {
+export function getStorageKey(userId?: string | null): string {
+  if (userId && typeof userId === "string" && userId.trim()) {
+    return `lifeutils-user-data-${userId.trim()}`;
+  }
+  return "lifeutils-guest-data";
+}
+
+export function loadData(userId?: string | null): AppData {
   try {
-    const raw = localStorage.getItem(KEY);
+    const key = getStorageKey(userId);
+    let raw = localStorage.getItem(key);
+
+    // If guest mode, also clean up legacy unpartitioned storage key to prevent cross-contamination
+    if (!userId) {
+      const legacyRaw = localStorage.getItem("lifeutils-data");
+      if (legacyRaw && !raw) {
+        // If legacy exists and has data, clear it so old user data never leaks into guest mode
+        localStorage.removeItem("lifeutils-data");
+      }
+    }
+
     const legacyTheme = localStorage.getItem("lifeutils-theme") as "light" | "dark" | null;
     const baseSettings: UserSettings = {
       ...DEFAULT_SETTINGS,
@@ -252,8 +268,22 @@ export function loadData(): AppData {
   }
 }
 
-export function saveData(d: AppData): void {
-  localStorage.setItem(KEY, JSON.stringify(d));
+export function saveData(d: AppData, userId?: string | null): void {
+  try {
+    const key = getStorageKey(userId);
+    localStorage.setItem(key, JSON.stringify(d));
+  } catch {
+    // Ignore storage quota errors
+  }
+}
+
+export function clearGuestData(): void {
+  try {
+    localStorage.removeItem("lifeutils-guest-data");
+    localStorage.removeItem("lifeutils-data");
+  } catch {
+    // Ignore
+  }
 }
 
 export function uid(): string {

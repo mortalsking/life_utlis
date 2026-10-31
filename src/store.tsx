@@ -54,7 +54,7 @@ export interface Store {
 const StoreContext = createContext<Store | null>(null);
 
 export function StoreProvider({ children }: { children: ReactNode }) {
-  const [data, setData] = useState<AppData>(loadData);
+  const [data, setData] = useState<AppData>(() => loadData(null));
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [isLoaded, setIsLoaded] = useState(false);
@@ -135,91 +135,67 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   }, [effectiveTheme, currentSettings.accentColor, currentSettings.compactMode, currentSettings.enableAnimations, currentSettings.currencySymbol]);
 
   useEffect(() => {
-    // Fetches user data from Supabase or inserts defaults if missing
+    // Strictly fetches THIS authenticated user's private data from Supabase
     const fetchUserData = async (u: User) => {
       const { data: cloudRes, error } = await supabase
         .from("user_data")
         .select("data")
         .eq("id", u.id)
         .single();
-      
-      const local = loadData();
-      const hasLocalData =
-        local.txs.length > 0 ||
-        local.attendance.length > 0 ||
-        local.tasks.length > 0 ||
-        local.journal.length > 0;
 
       const metaUsername =
         (u.user_metadata?.username as string) ||
         (u.user_metadata?.full_name as string) ||
         (u.user_metadata?.display_name as string);
 
+      const defaultName = metaUsername || (u.email ? u.email.split("@")[0] : "Friend");
+
       if (cloudRes && cloudRes.data) {
         const cloudData = sanitizeAndValidateAppData(cloudRes.data);
-        const cloudEmpty =
-          cloudData.txs.length === 0 &&
-          cloudData.attendance.length === 0 &&
-          cloudData.tasks.length === 0;
+        const resolvedName = cloudData.settings?.userName || defaultName;
 
-        const resolvedName =
-          cloudData.settings?.userName && cloudData.settings.userName !== "Rushi"
-            ? cloudData.settings.userName
-            : metaUsername || cloudData.settings?.userName || (u.email ? u.email.split("@")[0] : "Rushi");
-
-        if (hasLocalData && cloudEmpty) {
-          // Seamlessly migrate guest data to cloud account
-          const migrated = {
-            ...local,
-            settings: {
-              ...DEFAULT_SETTINGS,
-              ...(local.settings || {}),
-              userName: local.settings?.userName && local.settings.userName !== "Rushi" ? local.settings.userName : resolvedName,
-            },
-          };
-          await supabase.from("user_data").upsert({ id: u.id, data: migrated });
-          setData(migrated);
-        } else {
-          setData({
-            ...defaultData(),
-            ...cloudData,
-            settings: {
-              ...DEFAULT_SETTINGS,
-              ...(cloudData.settings || {}),
-              userName: resolvedName,
-            },
-          });
-        }
-      } else if (error && error.code === "PGRST116") {
-        // Brand new user: sync current guest data to cloud!
-        const resolvedName =
-          local.settings?.userName && local.settings.userName !== "Rushi"
-            ? local.settings.userName
-            : metaUsername || (u.email ? u.email.split("@")[0] : "Rushi");
-        const base = hasLocalData ? local : defaultData();
-        const initData = {
-          ...base,
+        const merged: AppData = {
+          ...defaultData(),
+          ...cloudData,
           settings: {
             ...DEFAULT_SETTINGS,
-            ...(base.settings || {}),
+            ...(cloudData.settings || {}),
             userName: resolvedName,
           },
         };
-        await supabase.from("user_data").insert([{ id: u.id, data: initData }]);
+
+        setData(merged);
+        saveData(merged, u.id);
+      } else if (error && error.code === "PGRST116") {
+        // Brand new user: initialize clean isolated profile
+        const initData: AppData = {
+          ...defaultData(),
+          settings: {
+            ...DEFAULT_SETTINGS,
+            userName: defaultName,
+          },
+        };
+        await supabase.from("user_data").upsert({ id: u.id, data: initData });
         setData(initData);
+        saveData(initData, u.id);
+      } else {
+        // Fallback: check cached user-specific storage
+        const cached = loadData(u.id);
+        setData(cached);
       }
       setIsLoaded(true);
     };
 
-    // Helper to process session changes and load data accordingly
+    // Helper to process session changes and load data strictly isolated per user
     const handleSession = (session: Session | null) => {
       setSession(session);
       setUser(session?.user || null);
       if (session?.user) {
         fetchUserData(session.user);
       } else {
-        // Guest mode: preserve local offline storage
-        setData(loadData());
+        // Guest mode: load strictly isolated guest storage (never prior user data)
+        const guestData = loadData(null);
+        setData(guestData);
         setIsLoaded(true);
       }
 
@@ -232,9 +208,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
             (session?.user?.user_metadata?.full_name as string) ||
             (session?.user?.user_metadata?.display_name as string);
           const activeName =
-            currentSettings.userName && currentSettings.userName !== "Rushi"
-              ? currentSettings.userName
-              : metaName || currentSettings.userName || (session?.user?.email ? session.user.email.split("@")[0] : "Rushi");
+            metaName || (session?.user?.email ? session.user.email.split("@")[0] : "Guest");
 
           rn.postMessage(JSON.stringify({
             type: "AUTH_CHANGED",
@@ -250,7 +224,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     // Get initial session on mount
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (!session?.user) {
-        setData(loadData());
+        setData(loadData(null));
         setIsLoaded(true);
         try {
           const rn = (window as unknown as { ReactNativeWebView?: { postMessage: (msg: string) => void } }).ReactNativeWebView;
@@ -273,12 +247,12 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     });
 
     return () => subscription.unsubscribe();
-  }, [currentSettings.userName]);
+  }, []);
 
   useEffect(() => {
-    // Save locally
-    saveData(data);
-    // Sync to supabase if logged in
+    // Save locally under user-scoped storage key
+    saveData(data, user?.id || null);
+    // Sync to supabase if logged in and loaded
     if (user && isLoaded) {
       supabase.from("user_data").upsert({ id: user.id, data }).then();
     }
@@ -320,7 +294,10 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       await supabase.auth.signOut();
       setSession(null);
       setUser(null);
-      setData(loadData());
+      // Clean isolated guest slate so previous user's sensitive data is wiped from active view
+      const cleanGuest = defaultData();
+      setData(cleanGuest);
+      saveData(cleanGuest, null);
     },
     addTx: ({ date, kind, category, amount, note }) =>
       setData((d) => ({

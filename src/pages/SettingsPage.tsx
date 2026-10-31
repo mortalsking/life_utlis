@@ -35,7 +35,7 @@ export default function SettingsPage({ onNavigateTab, onClose, onOpenTerms }: Se
   const avatarFileRef = useRef<HTMLInputElement>(null);
   const [activeSection, setActiveSection] = useState<"appearance" | "preferences" | "data" | "support" | "about" | null>("appearance");
   const [editingName, setEditingName] = useState(false);
-  const [nameVal, setNameVal] = useState(settings.userName || "Rushi");
+  const [nameVal, setNameVal] = useState(settings.userName || (user?.email ? user.email.split("@")[0] : "Friend"));
   const [avatarPickerOpen, setAvatarPickerOpen] = useState(false);
   const [avatarCategory, setAvatarCategory] = useState<"All" | "Students" | "Mascot & Animals" | "Abstract">("All");
   const [customAvatarUrl, setCustomAvatarUrl] = useState("");
@@ -311,7 +311,7 @@ export default function SettingsPage({ onNavigateTab, onClose, onOpenTerms }: Se
               }}
               title="Click to edit display name"
             >
-              <span className="clean-profile-name">{settings.userName || "Rushi"}</span>
+              <span className="clean-profile-name">{settings.userName || (user?.email ? user.email.split("@")[0] : "Friend")}</span>
               <span className="clean-name-edit-icon">
                 <Icon name="edit" size={14} />
               </span>
