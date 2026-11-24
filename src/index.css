@@ -4,14 +4,14 @@
 @tailwind utilities;
 
 :root {
-  --bg: #0b1120;
-  --bg-soft: #101830;
-  --card: #141d33;
-  --card-2: #1a2540;
-  --border: rgba(148, 163, 184, 0.14);
-  --border-strong: rgba(148, 163, 184, 0.28);
-  --text: #e8edf8;
-  --muted: #93a1c0;
+  --bg: #090d16;
+  --bg-soft: #0e1320;
+  --card: #131927;
+  --card-2: #182032;
+  --border: rgba(255, 255, 255, 0.08);
+  --border-strong: rgba(255, 255, 255, 0.16);
+  --text: #f1f5f9;
+  --muted: #94a3b8;
   --accent: #38bdf8;
   --accent-2: #818cf8;
   --accent-glow: rgba(56, 189, 248, 0.35);
@@ -115,14 +115,27 @@ body {
 }
 
 body {
-  background:
-    radial-gradient(1000px 500px at 85% -10%, rgba(129, 140, 248, 0.14), transparent 60%),
-    radial-gradient(900px 420px at -10% 5%, rgba(76, 194, 255, 0.12), transparent 55%),
-    var(--bg);
+  background-color: var(--bg);
+  background-image:
+    radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.16) 0px, transparent 48%),
+    radial-gradient(at 100% 0%, rgba(6, 182, 212, 0.13) 0px, transparent 48%),
+    radial-gradient(at 50% 100%, rgba(168, 85, 247, 0.10) 0px, transparent 52%),
+    radial-gradient(rgba(255, 255, 255, 0.04) 1px, transparent 1px);
+  background-size: 100% 100%, 100% 100%, 100% 100%, 28px 28px;
   background-attachment: fixed;
   color: var(--text);
   font-family: "Outfit Variable", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   -webkit-font-smoothing: antialiased;
+  min-height: 100vh;
+}
+
+html.light body {
+  background-color: var(--bg);
+  background-image:
+    radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.08) 0px, transparent 48%),
+    radial-gradient(at 100% 0%, rgba(6, 182, 212, 0.06) 0px, transparent 48%),
+    radial-gradient(rgba(15, 23, 42, 0.03) 1px, transparent 1px);
+  background-size: 100% 100%, 100% 100%, 28px 28px;
 }
 
 .shell {
@@ -131,6 +144,51 @@ body {
   min-height: 100dvh;
   display: flex;
   flex-direction: column;
+  position: relative;
+  background: var(--bg);
+  transition: all 0.28s ease;
+}
+
+/* Enhanced desktop / widescreen layout for website only */
+@media (min-width: 768px) {
+  body::before {
+    content: "";
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    pointer-events: none;
+    background: 
+      radial-gradient(circle 800px at 12% 25%, rgba(99, 102, 241, 0.12), transparent 70%),
+      radial-gradient(circle 700px at 88% 75%, rgba(6, 182, 212, 0.10), transparent 70%);
+    z-index: 0;
+  }
+
+  .shell {
+    max-width: 500px;
+    margin: 24px auto;
+    min-height: calc(100dvh - 48px);
+    border-radius: 28px;
+    border: 1px solid var(--border-strong);
+    box-shadow: 
+      0 28px 90px -15px rgba(0, 0, 0, 0.85),
+      0 0 50px rgba(99, 102, 241, 0.12),
+      inset 0 1px 0 rgba(255, 255, 255, 0.12);
+    overflow: hidden;
+    z-index: 1;
+  }
+
+  .topbar {
+    border-top-left-radius: 28px;
+    border-top-right-radius: 28px;
+  }
+
+  .bottom-nav {
+    max-width: 480px;
+    bottom: 24px;
+    border-radius: 22px;
+  }
 }
 
 /* ---------- topbar ---------- */
@@ -3612,17 +3670,17 @@ html[data-animations="false"] * {
    ========================================================================== */
 
 .brand-logo-img {
-  width: 32px;
-  height: 32px;
-  border-radius: 9px;
-  object-fit: cover;
-  box-shadow: 0 0 10px rgba(124, 58, 237, 0.4);
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  transition: transform 0.2s ease;
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  object-fit: contain;
+  background: transparent;
+  filter: drop-shadow(0 2px 8px rgba(124, 58, 237, 0.45));
+  transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 .brand-logo-img:hover {
-  transform: scale(1.08) rotate(2deg);
+  transform: scale(1.1) rotate(3deg);
 }
 
 /* Expanded Avatar Gallery Dropdown */

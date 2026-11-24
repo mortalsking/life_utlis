@@ -73,7 +73,7 @@ export interface UserSettings {
 }
 
 export const DEFAULT_SETTINGS: UserSettings = {
-  userName: "Friend",
+  userName: "Rushi",
   avatarUrl: "/logo.png",
   appStyle: "Classic",
   themeMode: "dark",
@@ -256,11 +256,21 @@ export function loadData(userId?: string | null): AppData {
 
     const parsed = JSON.parse(raw);
     const sanitized = sanitizeAndValidateAppData(parsed);
+
+    // Auto-correct any legacy placeholder name "Friend" to user's real name "Rushi"
+    if (sanitized.settings?.userName === "Friend") {
+      sanitized.settings.userName = "Rushi";
+    }
+
     return {
       ...sanitized,
       settings: {
         ...baseSettings,
         ...sanitized.settings,
+        userName:
+          sanitized.settings?.userName && sanitized.settings.userName !== "Friend"
+            ? sanitized.settings.userName
+            : "Rushi",
       },
     };
   } catch {

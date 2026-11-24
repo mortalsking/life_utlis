@@ -54,7 +54,34 @@ export interface Store {
 const StoreContext = createContext<Store | null>(null);
 
 export function StoreProvider({ children }: { children: ReactNode }) {
-  const [data, setData] = useState<AppData>(() => loadData(null));
+  const [data, setData] = useState<AppData>(() => {
+    let cachedUid: string | null = null;
+    if (typeof window !== "undefined") {
+      try {
+        const directId = localStorage.getItem("lifeutils-current-user-id");
+        if (directId && directId.trim()) {
+          cachedUid = directId.trim();
+        } else {
+          for (let i = 0; i < localStorage.length; i++) {
+            const k = localStorage.key(i);
+            if (k && k.startsWith("sb-") && k.endsWith("-auth-token")) {
+              const val = localStorage.getItem(k);
+              if (val) {
+                const parsed = JSON.parse(val);
+                if (parsed?.user?.id) {
+                  cachedUid = parsed.user.id;
+                  break;
+                }
+              }
+            }
+          }
+        }
+      } catch {
+        // Ignore
+      }
+    }
+    return loadData(cachedUid);
+  });
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [isLoaded, setIsLoaded] = useState(false);
@@ -148,11 +175,14 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         (u.user_metadata?.full_name as string) ||
         (u.user_metadata?.display_name as string);
 
-      const defaultName = metaUsername || (u.email ? u.email.split("@")[0] : "Friend");
+      const defaultName = metaUsername || (u.email ? u.email.split("@")[0] : "Rushi");
 
       if (cloudRes && cloudRes.data) {
         const cloudData = sanitizeAndValidateAppData(cloudRes.data);
-        const resolvedName = cloudData.settings?.userName || defaultName;
+        const resolvedName =
+          cloudData.settings?.userName && cloudData.settings.userName !== "Friend"
+            ? cloudData.settings.userName
+            : defaultName;
 
         const merged: AppData = {
           ...defaultData(),
@@ -191,9 +221,19 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       setSession(session);
       setUser(session?.user || null);
       if (session?.user) {
+        try {
+          localStorage.setItem("lifeutils-current-user-id", session.user.id);
+        } catch {
+          // ignore
+        }
         fetchUserData(session.user);
       } else {
         // Guest mode: load strictly isolated guest storage (never prior user data)
+        try {
+          localStorage.removeItem("lifeutils-current-user-id");
+        } catch {
+          // ignore
+        }
         const guestData = loadData(null);
         setData(guestData);
         setIsLoaded(true);
@@ -208,7 +248,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
             (session?.user?.user_metadata?.full_name as string) ||
             (session?.user?.user_metadata?.display_name as string);
           const activeName =
-            metaName || (session?.user?.email ? session.user.email.split("@")[0] : "Guest");
+            metaName || (session?.user?.email ? session.user.email.split("@")[0] : "Rushi");
 
           rn.postMessage(JSON.stringify({
             type: "AUTH_CHANGED",
@@ -291,6 +331,11 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     showSettingsModal,
     setShowSettingsModal,
     signOut: async () => {
+      try {
+        localStorage.removeItem("lifeutils-current-user-id");
+      } catch {
+        // ignore
+      }
       await supabase.auth.signOut();
       setSession(null);
       setUser(null);
