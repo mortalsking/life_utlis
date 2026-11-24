@@ -1,4 +1,4 @@
--- ============================================================================
+﻿-- ============================================================================
 -- Life Utils - Supabase Database Schema & Security Hardening
 -- ============================================================================
 -- Run this in your Supabase SQL Editor: https://supabase.com/dashboard/project/_/sql
@@ -15,7 +15,7 @@ create table if not exists public.user_data (
 
 alter table public.user_data enable row level security;
 
--- Policies for user_data: Strictly isolated per user
+-- Policies for user_data: Strictly isolated per user (all 4 operations locked)
 drop policy if exists "Users can read their own data" on public.user_data;
 create policy "Users can read their own data"
   on public.user_data for select
@@ -29,7 +29,17 @@ create policy "Users can upsert their own data"
 drop policy if exists "Users can update their own data" on public.user_data;
 create policy "Users can update their own data"
   on public.user_data for update
+  using (auth.uid() = id)
+  with check (auth.uid() = id);
+
+drop policy if exists "Users can delete their own data" on public.user_data;
+create policy "Users can delete their own data"
+  on public.user_data for delete
   using (auth.uid() = id);
+
+-- Revoke direct table access from anon role (belt & suspenders on top of RLS)
+revoke all on public.user_data from anon;
+grant select, insert, update, delete on public.user_data to authenticated;
 
 -- ----------------------------------------------------------------------------
 -- 2. FORUM & COMMUNITY FEEDBACK TABLE (Secured & Hardened)
