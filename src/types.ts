@@ -1,4 +1,4 @@
-export type TxKind = "expense" | "saved";
+﻿export type TxKind = "expense" | "saved";
 export type AttStatus = "present" | "absent";
 
 export interface Tx {
@@ -232,12 +232,19 @@ export function loadData(userId?: string | null): AppData {
     const key = getStorageKey(userId);
     let raw = localStorage.getItem(key);
 
-    // If guest mode, also clean up legacy unpartitioned storage key to prevent cross-contamination
-    if (!userId) {
+    // Migrate legacy unpartitioned "lifeutils-data" key → user-scoped key (one-time migration)
+    if (!raw) {
       const legacyRaw = localStorage.getItem("lifeutils-data");
-      if (legacyRaw && !raw) {
-        // If legacy exists and has data, clear it so old user data never leaks into guest mode
-        localStorage.removeItem("lifeutils-data");
+      if (legacyRaw) {
+        if (userId) {
+          // Logged-in user: migrate their old data to the new user-scoped key
+          localStorage.setItem(key, legacyRaw);
+          localStorage.removeItem("lifeutils-data");
+          raw = legacyRaw;
+        } else {
+          // Guest: remove legacy key so stale user data doesn't leak into guest profile
+          localStorage.removeItem("lifeutils-data");
+        }
       }
     }
 

@@ -1,4 +1,4 @@
-/* eslint-disable react-refresh/only-export-components, react/only-export-components */
+﻿/* eslint-disable react-refresh/only-export-components, react/only-export-components */
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import { type Session, type User } from "@supabase/supabase-js";
 import { supabase } from "./supabaseClient";
@@ -290,10 +290,13 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
+    // GUARD: Never save until data has been fully loaded from cloud/storage.
+    // This prevents the initial empty state from overwriting real Supabase data.
+    if (!isLoaded) return;
     // Save locally under user-scoped storage key
     saveData(data, user?.id || null);
-    // Sync to supabase if logged in and loaded
-    if (user && isLoaded) {
+    // Sync to Supabase if logged in
+    if (user) {
       supabase.from("user_data").upsert({ id: user.id, data }).then();
     }
   }, [data, user, isLoaded]);
