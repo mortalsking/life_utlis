@@ -85,6 +85,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [isLoaded, setIsLoaded] = useState(false);
+  const [loadedForUserId, setLoadedForUserId] = useState<string | null | undefined>(undefined);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
 
@@ -213,6 +214,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         const cached = loadData(u.id);
         setData(cached);
       }
+      setLoadedForUserId(u.id);
       setIsLoaded(true);
     };
 
@@ -221,6 +223,9 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       setSession(session);
       setUser(session?.user || null);
       if (session?.user) {
+        // Reset load state immediately so guest/previous data is NEVER saved to the newly logged-in user
+        setIsLoaded(false);
+        setLoadedForUserId(undefined);
         try {
           localStorage.setItem("lifeutils-current-user-id", session.user.id);
         } catch {
@@ -236,6 +241,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         }
         const guestData = loadData(null);
         setData(guestData);
+        setLoadedForUserId(null);
         setIsLoaded(true);
       }
 
@@ -265,6 +271,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (!session?.user) {
         setData(loadData(null));
+        setLoadedForUserId(null);
         setIsLoaded(true);
         try {
           const rn = (window as unknown as { ReactNativeWebView?: { postMessage: (msg: string) => void } }).ReactNativeWebView;
@@ -290,16 +297,18 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
-    // GUARD: Never save until data has been fully loaded from cloud/storage.
-    // This prevents the initial empty state from overwriting real Supabase data.
+    // GUARD: Never save until data has been fully loaded for THIS exact user/guest.
+    // Prevents guest data or initial empty state from overwriting real Supabase data on login.
     if (!isLoaded) return;
+    if (user && loadedForUserId !== user.id) return;
+    if (!user && loadedForUserId !== null) return;
     // Save locally under user-scoped storage key
     saveData(data, user?.id || null);
     // Sync to Supabase if logged in
     if (user) {
       supabase.from("user_data").upsert({ id: user.id, data }).then();
     }
-  }, [data, user, isLoaded]);
+  }, [data, user, isLoaded, loadedForUserId]);
 
   const store: Store = {
     data,

@@ -1,4 +1,4 @@
-const CACHE = "lifeutils-v3";
+const CACHE = "lifeutils-v4";
 const SHELL = ["/", "/index.html", "/manifest.webmanifest", "/icons/icon-192.png", "/icons/icon-512.png"];
 
 self.addEventListener("install", (e) => {

@@ -104,12 +104,12 @@ export default function Auth({ onClose }: AuthProps) {
         {!isLogin && (
           <div className="space-y-2">
             <label className="text-sm font-medium leading-none text-zinc-950 dark:text-zinc-50" htmlFor="username">
-              Username
+              Profile Name
             </label>
             <input
               id="username"
               type="text"
-              placeholder="e.g. rushi or alex_99"
+              placeholder="e.g. Rushi"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               required={!isLogin}
