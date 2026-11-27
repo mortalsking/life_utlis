@@ -323,7 +323,7 @@ export default function SettingsPage({ onNavigateTab, onClose, onOpenTerms }: Se
             {session ? (
               <>
                 <span className="sync-dot active" />
-                <span className="sync-text">Cloud Synced &middot; {user?.email}</span>
+                <span className="sync-text">Cloud Synced &middot; {settings.userName || (user?.email ? user.email.split("@")[0] : "Account")}</span>
               </>
             ) : (
               <>
@@ -649,7 +649,7 @@ export default function SettingsPage({ onNavigateTab, onClose, onOpenTerms }: Se
                       <span className="clean-dot active" />
                       <div style={{ flex: 1 }}>
                         <strong style={{ display: "block", color: "var(--text)" }}>Cloud Account Synced</strong>
-                        <span style={{ fontSize: "0.78rem", color: "var(--muted)" }}>{user?.email}</span>
+                        <span style={{ fontSize: "0.78rem", color: "var(--muted)" }}>{settings.userName || (user?.email ? user.email.split("@")[0] : "Account")}</span>
                       </div>
                       <button className="btn ghost small-btn" onClick={signOut}>
                         Sign Out
