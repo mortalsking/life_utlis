@@ -1,4 +1,4 @@
-﻿/* eslint-disable react-refresh/only-export-components, react/only-export-components */
+/* eslint-disable react-refresh/only-export-components, react/only-export-components */
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import { type Session, type User } from "@supabase/supabase-js";
 import { supabase } from "./supabaseClient";
@@ -86,6 +86,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoaded, setIsLoaded] = useState(false);
   const [loadedForUserId, setLoadedForUserId] = useState<string | null | undefined>(undefined);
+  const [cloudWriteAllowed, setCloudWriteAllowed] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
 
@@ -197,6 +198,16 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
         setData(merged);
         saveData(merged, u.id);
+        try {
+          const totalItems =
+            merged.txs.length + merged.attendance.length + merged.tasks.length + merged.journal.length + merged.links.length;
+          if (totalItems > 0) {
+            localStorage.setItem(`lifeutils-backup-${u.id}`, JSON.stringify(merged));
+          }
+        } catch {
+          // ignore
+        }
+        setCloudWriteAllowed(true);
       } else if (error && error.code === "PGRST116") {
         // Brand new user: initialize clean isolated profile
         const initData: AppData = {
@@ -209,10 +220,12 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         await supabase.from("user_data").upsert({ id: u.id, data: initData });
         setData(initData);
         saveData(initData, u.id);
+        setCloudWriteAllowed(true);
       } else {
-        // Fallback: check cached user-specific storage
+        // Network/query error: load local cache for display, but DO NOT allow cloud overwrite
         const cached = loadData(u.id);
         setData(cached);
+        setCloudWriteAllowed(false);
       }
       setLoadedForUserId(u.id);
       setIsLoaded(true);
@@ -226,6 +239,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         // Reset load state immediately so guest/previous data is NEVER saved to the newly logged-in user
         setIsLoaded(false);
         setLoadedForUserId(undefined);
+        setCloudWriteAllowed(false);
         try {
           localStorage.setItem("lifeutils-current-user-id", session.user.id);
         } catch {
@@ -304,11 +318,11 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     if (!user && loadedForUserId !== null) return;
     // Save locally under user-scoped storage key
     saveData(data, user?.id || null);
-    // Sync to Supabase if logged in
-    if (user) {
+    // Sync to Supabase only if cloud read/init succeeded for this user
+    if (user && cloudWriteAllowed) {
       supabase.from("user_data").upsert({ id: user.id, data }).then();
     }
-  }, [data, user, isLoaded, loadedForUserId]);
+  }, [data, user, isLoaded, loadedForUserId, cloudWriteAllowed]);
 
   const store: Store = {
     data,
