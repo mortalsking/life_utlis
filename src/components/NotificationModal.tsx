@@ -6,11 +6,7 @@ import {
   dismissAllNotificationIds,
   dismissNotificationId,
   getDismissedIds,
-  getNotificationPermission,
-  isNotificationSupported,
-  requestNotificationPermission,
   resetDismissedNotifications,
-  sendLocalNotification,
   toast,
   type AppNotification,
 } from "../notifications";
@@ -21,18 +17,9 @@ interface NotificationModalProps {
 }
 
 export default function NotificationModal({ onClose, onNavigateTab }: NotificationModalProps) {
-  const isNativeShell =
-    typeof window !== "undefined" &&
-    Boolean(
-      (window as unknown as { isReactNativeApp?: boolean }).isReactNativeApp ||
-      (window as unknown as { ReactNativeWebView?: unknown }).ReactNativeWebView
-    );
-
   const { data, isGuest, playHaptic, setShowAuthModal } = useStore();
   const [filter, setFilter] = useState<"all" | "alerts" | "info">("all");
   const [dismissedIds, setDismissedIds] = useState<Set<string>>(getDismissedIds);
-  const [permission, setPermission] = useState<NotificationPermission | "unsupported">(getNotificationPermission);
-  const [showBlockedGuide, setShowBlockedGuide] = useState(false);
 
   // Compute all current notifications from live state
   const allComputed = useMemo(() => computeNotifications(data, isGuest), [data, isGuest]);
@@ -88,44 +75,6 @@ export default function NotificationModal({ onClose, onNavigateTab }: Notificati
       onNavigateTab(notif.actionTab);
       onClose();
     }
-  };
-
-  const handleRequestPush = async () => {
-    playHaptic("click");
-    const res = await requestNotificationPermission();
-    setPermission(res);
-    if (res === "granted") {
-      sendLocalNotification("Life Utils Alerts Enabled! 🔔", {
-        body: "You'll receive notifications for attendance warnings and overdue tasks.",
-      });
-      toast.success("Browser notifications enabled!");
-      setShowBlockedGuide(false);
-    } else if (res === "denied") {
-      setShowBlockedGuide(true);
-      toast.error("Notifications blocked in browser settings. Tap 'Blocked' to fix.");
-    }
-  };
-
-  const handleRecheckPermission = () => {
-    playHaptic("click");
-    const res = getNotificationPermission();
-    setPermission(res);
-    if (res === "granted") {
-      toast.success("✓ Notifications unblocked and enabled!");
-      setShowBlockedGuide(false);
-    } else if (res === "default") {
-      handleRequestPush();
-    } else {
-      toast.info("Still marked as blocked. Follow the 3 steps above to allow.");
-    }
-  };
-
-  const handleTestInApp = () => {
-    playHaptic("success");
-    toast.success("🔔 In-App Alerts Active: You'll see alerts here inside the app!");
-    sendLocalNotification("Life Utils Notification Test 🔔", {
-      body: "Test notification received successfully!",
-    });
   };
 
   const getLevelBadge = (level: AppNotification["level"]) => {
@@ -186,111 +135,6 @@ export default function NotificationModal({ onClose, onNavigateTab }: Notificati
           </button>
         </div>
       </div>
-
-      {/* Web Push Notification Banner */}
-      {isNotificationSupported() && (
-        <>
-          <div className="clean-push-banner">
-            <div className="clean-push-banner-content">
-              <span className="clean-push-icon">🔔</span>
-              <div className="clean-push-text">
-                <strong>Push & System Alerts</strong>
-                <p>Receive notifications when classes are missed or tasks fall overdue.</p>
-              </div>
-            </div>
-            {isNativeShell ? (
-              <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                <span className="clean-push-granted-pill">✓ Mobile Alerts Active</span>
-                <button
-                  type="button"
-                  className="btn small ghost"
-                  style={{ padding: "4px 8px", fontSize: "0.72rem" }}
-                  onClick={handleTestInApp}
-                  title="Send test in-app alert"
-                >
-                  Test
-                </button>
-              </div>
-            ) : permission === "granted" ? (
-              <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                <span className="clean-push-granted-pill">✓ Enabled</span>
-                <button
-                  type="button"
-                  className="btn small ghost"
-                  style={{ padding: "4px 8px", fontSize: "0.72rem" }}
-                  onClick={handleTestInApp}
-                  title="Test alert"
-                >
-                  Test
-                </button>
-              </div>
-            ) : permission === "denied" ? (
-              <button
-                type="button"
-                className="clean-push-denied-pill"
-                style={{ border: "none", cursor: "pointer" }}
-                onClick={() => {
-                  playHaptic("click");
-                  setShowBlockedGuide((v) => !v);
-                }}
-                title="Tap to see instructions to unblock"
-              >
-                ⚠️ Blocked &middot; Tap to Fix
-              </button>
-            ) : (
-              <button
-                type="button"
-                className="btn small primary clean-push-enable-btn"
-                onClick={handleRequestPush}
-              >
-                Enable Alerts
-              </button>
-            )}
-          </div>
-
-          {showBlockedGuide && (
-            <div className="clean-notif-blocked-guide">
-              <div className="guide-header">
-                <span>⚠️ How to Unblock on Mobile:</span>
-                <button
-                  type="button"
-                  className="icon-btn small"
-                  onClick={() => setShowBlockedGuide(false)}
-                >
-                  <Icon name="x" size={13} />
-                </button>
-              </div>
-              <ol className="guide-steps">
-                <li>
-                  Tap the <strong>tune / lock icon 🔒</strong> beside the website address in your mobile browser.
-                </li>
-                <li>
-                  Tap <strong>Permissions</strong> &rarr; <strong>Notifications</strong>.
-                </li>
-                <li>
-                  Select <strong>Allow</strong> (or Reset permissions).
-                </li>
-              </ol>
-              <div className="guide-actions">
-                <button
-                  type="button"
-                  className="btn small primary"
-                  onClick={handleRecheckPermission}
-                >
-                  <Icon name="refresh" size={13} /> Re-check Status
-                </button>
-                <button
-                  type="button"
-                  className="btn small ghost"
-                  onClick={handleTestInApp}
-                >
-                  Send In-App Test
-                </button>
-              </div>
-            </div>
-          )}
-        </>
-      )}
 
       {/* Filter Tabs */}
       <div className="clean-notif-tabs">
