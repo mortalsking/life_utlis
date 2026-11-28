@@ -3904,15 +3904,16 @@ html[data-animations="false"] * {
 
 /* Terms & Privacy Modal */
 .terms-modal-container {
-  max-width: 620px;
+  width: 100%;
+  max-width: 480px;
   background: var(--bg);
   border: 1px solid var(--border-strong);
   border-radius: 24px;
   display: flex;
   flex-direction: column;
-  max-height: 85vh;
+  max-height: 85dvh;
   box-shadow: 0 25px 60px rgba(0, 0, 0, 0.6);
-  animation: scaleUpSpring 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  animation: scaleUpSpring 0.22s cubic-bezier(0.16, 1, 0.3, 1);
   overflow: hidden;
 }
 
@@ -3950,11 +3951,12 @@ html[data-animations="false"] * {
 }
 
 .terms-modal-body {
-  padding: 18px 20px;
+  padding: 16px 18px;
   overflow-y: auto;
+  overscroll-behavior: contain;
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 12px;
 }
 
 .terms-section-card {
