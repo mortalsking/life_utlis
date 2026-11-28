@@ -1,5 +1,5 @@
 /* eslint-disable react-refresh/only-export-components, react/only-export-components */
-import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from "react";
 import { type Session, type User } from "@supabase/supabase-js";
 import { supabase } from "./supabaseClient";
 import { todayISO } from "./utils";
@@ -87,6 +87,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const [isLoaded, setIsLoaded] = useState(false);
   const [loadedForUserId, setLoadedForUserId] = useState<string | null | undefined>(undefined);
   const [cloudWriteAllowed, setCloudWriteAllowed] = useState(false);
+  const cloudHadDataRef = useRef(false);
+  const allowEmptyOverwriteRef = useRef(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
 
@@ -198,9 +200,10 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
         setData(merged);
         saveData(merged, u.id);
+        const totalItems =
+          merged.txs.length + merged.attendance.length + merged.tasks.length + merged.journal.length + merged.links.length;
+        cloudHadDataRef.current = totalItems > 0;
         try {
-          const totalItems =
-            merged.txs.length + merged.attendance.length + merged.tasks.length + merged.journal.length + merged.links.length;
           if (totalItems > 0) {
             localStorage.setItem(`lifeutils-backup-${u.id}`, JSON.stringify(merged));
           }
@@ -320,6 +323,16 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     saveData(data, user?.id || null);
     // Sync to Supabase only if cloud read/init succeeded for this user
     if (user && cloudWriteAllowed) {
+      const totalItems =
+        data.txs.length + data.attendance.length + data.tasks.length + data.journal.length + data.links.length;
+      if (cloudHadDataRef.current && totalItems === 0 && !allowEmptyOverwriteRef.current) {
+        // Hard safety guard: never wipe non-empty cloud data with an empty payload
+        return;
+      }
+      if (totalItems > 0) {
+        cloudHadDataRef.current = true;
+      }
+      allowEmptyOverwriteRef.current = false;
       supabase.from("user_data").upsert({ id: user.id, data }).then();
     }
   }, [data, user, isLoaded, loadedForUserId, cloudWriteAllowed]);
@@ -357,6 +370,10 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     showSettingsModal,
     setShowSettingsModal,
     signOut: async () => {
+      setIsLoaded(false);
+      setLoadedForUserId(undefined);
+      setCloudWriteAllowed(false);
+      cloudHadDataRef.current = false;
       try {
         localStorage.removeItem("lifeutils-current-user-id");
       } catch {
@@ -369,6 +386,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       const cleanGuest = defaultData();
       setData(cleanGuest);
       saveData(cleanGuest, null);
+      setLoadedForUserId(null);
+      setIsLoaded(true);
     },
     addTx: ({ date, kind, category, amount, note }) =>
       setData((d) => ({
@@ -444,7 +463,10 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       }),
     delLink: (id) =>
       setData((d) => ({ ...d, links: d.links.filter((l) => l.id !== id) })),
-    replaceAll: (nd) => setData(sanitizeAndValidateAppData(nd)),
+    replaceAll: (nd) => {
+      allowEmptyOverwriteRef.current = true;
+      setData(sanitizeAndValidateAppData(nd));
+    },
   };
 
   return <StoreContext.Provider value={store}>{children}</StoreContext.Provider>;
